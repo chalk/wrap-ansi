@@ -1,11 +1,14 @@
 'use strict';
 var spliceString = require('splice-string');
 
+var sets = {
+	'0': 0,	'1': 22, '2': 22, '3': 23, '4': 24, '7': 27, '8': 28, '9': 2, '30': 39, '31': 39, '32': 39, '33': 39, '34': 39, '35': 39, '36': 39, '37': 39, '90': 3, '40': 49, '41': 49, '42': 49, '43': 49, '44': 49, '45': 49, '46': 49, '47': 4
+};
+
 module.exports = function (str, cols) {
 	var pre = '';
 	var ret = '';
 	var insideEscape = false;
-	var endCode = '\u001b[39m';
 	var escapeCode;
 	var visible = 0;
 	var lastSpace = 0;
@@ -52,10 +55,10 @@ module.exports = function (str, cols) {
 			continue;
 		}
 
-		++visible;
-		if (escapeCode) {
+		visible++;
+		if (escapeCode && sets[escapeCode]) {
 			if (pre[j + 1] === '\n') {
-				ret += endCode;
+				ret += '\u001b[' + sets[escapeCode] + 'm';
 			} else if (y === '\n') {
 				ret += '\u001b[' + escapeCode + 'm';
 			}
