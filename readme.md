@@ -44,6 +44,7 @@ Number of columns to wrap the text to.
 
 ## Related
 
+- [slice-ansi](https://github.com/chalk/slice-ansi) - Slice a string with ANSI escape codes
 - [chalk](https://github.com/chalk/chalk) - Terminal string styling done right
 
 
