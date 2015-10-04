@@ -123,7 +123,7 @@ function invoke(str, cols, opts) {
 			continue;
 		}
 
-		if (rowLength + lengths[i] > cols) {
+		if (rowLength + lengths[i] > cols && rowLength) {
 			rows.push('');
 		}
 
