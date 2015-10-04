@@ -1,5 +1,5 @@
 'use strict';
-var spliceString = require('splice-string');
+var stripAnsi = require('strip-ansi');
 
 var ESCAPES = [
 	'\u001b',
@@ -40,17 +40,24 @@ function wrapAnsi(code) {
 	return ESCAPES[0] + '[' + code + 'm';
 }
 
-module.exports = function (str, cols) {
-	var pre = '';
-	var ret = '';
-	var insideEscape = false;
-	var escapeCode;
-	var visible = 0;
-	var lastSpace = 0;
+// calculate the length of words split on ' ', ignoring
+// the extra characters added by ansi escape codes.
+function wordLengths(str) {
+	return stripAnsi(str).split(' ').map(function (s) {
+		return s.length;
+	});
+}
 
-	for (var i = 0; i < str.length; i++) {
-		var x = str[i];
-		pre += x;
+// wrap a long word across multiple rows.
+// ansi escape codes do not count towards length.
+function wrapWord(rows, word, cols) {
+	var insideEscape = false;
+	var visible = rows[rows.length - 1].length;
+
+	for (var i = 0; i < word.length; i++) {
+		var x = word[i];
+
+		rows[rows.length - 1] += x;
 
 		if (ESCAPES.indexOf(x) !== -1) {
 			insideEscape = true;
@@ -63,16 +70,69 @@ module.exports = function (str, cols) {
 			continue;
 		}
 
-		if (x === ' ') {
-			lastSpace = i;
-		}
+		visible++;
 
-		if (++visible >= cols - 2 && lastSpace > 0) {
-			pre = spliceString(pre, lastSpace, 1, '\n');
-			lastSpace = 0;
+		if (visible >= cols && i < word.length - 1) {
+			rows.push('');
 			visible = 0;
 		}
 	}
+
+	// it's possible that the last row we copy over is only
+	// ansi escape characters, handle this edge-case.
+	if (!visible && rows[rows.length - 1].length > 0 && rows.length > 1) {
+		rows[rows.length - 2] += rows.pop();
+	}
+}
+
+// the wrap-ansi module can be invoked
+// in either 'hard' or 'soft' wrap mode.
+//
+// 'hard' will never allow a string to take up more
+// than cols characters.
+//
+// 'soft' allows long words to expand past the column length.
+function invoke(str, cols, opts) {
+	var options = opts || {};
+
+	var pre = '';
+	var ret = '';
+	var insideEscape = false;
+	var escapeCode;
+	var visible = 0;
+
+	var lengths = wordLengths(str);
+	var words = str.split(' ');
+	var rows = [''];
+
+	for (var i = 0, word; (word = words[i]) !== undefined; i++) {
+		var rowLength = stripAnsi(rows[rows.length - 1]).length;
+
+		if (rowLength) {
+			rows[rows.length - 1] += ' ';
+			rowLength++;
+		}
+
+		// in 'hard' wrap mode, the length of a line is
+		// never allowed to extend past 'cols'.
+		if (lengths[i] > cols && options.hard) {
+			if (rowLength) {
+				rows.push('');
+			}
+			wrapWord(rows, word, cols);
+			continue;
+		}
+
+		if (rowLength + lengths[i] > cols) {
+			rows.push('');
+		}
+
+		rows[rows.length - 1] += word;
+	}
+
+	pre = rows.map(function (r) {
+		return r.trim();
+	}).join('\n');
 
 	visible = 0;
 
@@ -105,4 +165,16 @@ module.exports = function (str, cols) {
 	}
 
 	return ret;
+}
+
+// strings never extend past 'cols'.
+invoke.hard = function (str, cols) {
+	return invoke(str, cols, {hard: true});
 };
+
+// long words sometimes extend past 'cols'.
+invoke.soft = function (str, cols) {
+	return invoke(str, cols, {hard: false});
+};
+
+module.exports = invoke;
