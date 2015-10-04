@@ -7,17 +7,24 @@ var fn = require('./');
 var fixture = 'The quick brown ' + chalk.red('fox jumped over ') + 'the lazy ' + chalk.green('dog and then ran away with the unicorn.');
 
 test(function (t) {
+	var res5 = fn.hard(fixture, 5);
 	var res20 = fn(fixture, 20);
 	var res30 = fn(fixture, 30);
 
-	t.assert(res20 === 'The quick brown\n\u001b[31mfox jumped over \u001b[39mthe\nlazy \u001b[32mdog and then\u001b[39m\n\u001b[32mran away with the\u001b[39m\n\u001b[32municorn.\u001b[39m');
+	t.assert(res20 === 'The quick brown \x1B[31mfox\x1B[39m\n\x1B[31mjumped over \x1B[39mthe lazy\n\x1B[32mdog and then ran\x1B[39m\n\x1B[32maway with the\x1B[39m\n\x1B[32municorn.\x1B[39m');
 	t.assert(stripAnsi(res20).split('\n').every(function (x) {
 		return x.length <= 20;
 	}));
 
-	t.assert(res30 === 'The quick brown \u001b[31mfox jumped\u001b[39m\n\u001b[31mover \u001b[39mthe lazy \u001b[32mdog and then\u001b[39m\n\u001b[32mran away with the unicorn.\u001b[39m');
+	t.assert(res30 === 'The quick brown \x1B[31mfox jumped\x1B[39m\n\x1B[31mover \x1B[39mthe lazy \x1B[32mdog and then ran\x1B[39m\n\x1B[32maway with the unicorn.\x1B[39m');
 	t.assert(stripAnsi(res30).split('\n').every(function (x) {
 		return x.length <= 30;
+	}));
+
+	// words greate than 5 characters, e.g., unicorn., will be split onto multiple lines.
+	t.assert(res5 === 'The\nquick\nbrown\n\x1B[31mfox\x1B[39m\n\x1B[31mjumpe\x1B[39m\n\x1B[31md\x1B[39m\n\x1B[31mover\x1B[39m\n\x1B[31m\x1B[39mthe\nlazy\n\x1B[32mdog\x1B[39m\n\x1B[32mand\x1B[39m\n\x1B[32mthen\x1B[39m\n\x1B[32mran\x1B[39m\n\x1B[32maway\x1B[39m\n\x1B[32mwith\x1B[39m\n\x1B[32mthe\x1B[39m\n\x1B[32munico\x1B[39m\n\x1B[32mrn.\x1B[39m');
+	t.assert(stripAnsi(res5).split('\n').every(function (x) {
+		return x.length <= 5;
 	}));
 
 	t.end();
