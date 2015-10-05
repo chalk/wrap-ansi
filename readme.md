@@ -2,7 +2,6 @@
 
 > Wordwrap a string with [ANSI escape codes](http://en.wikipedia.org/wiki/ANSI_escape_code#Colors_and_Styles)
 
-
 ## Install
 
 ```
@@ -27,7 +26,22 @@ console.log(wrapAnsi(input, 20));
 
 ## API
 
-### wrapAnsi(input, columns)
+### wrapAnsi(input, columns, opts)
+
+wrap words to the specified column width. By default the wrap is
+`soft`, so long words may extend past the column length.
+
+the following options can be provided:
+
+* `hard`: `boolean`, should hard wrapping be enabled?
+
+### wrapAnsi.hard(input, columns)
+
+long words will be broken up so that they do not extend past the column width.
+
+### wrapAnsi.soft(input, columns)
+
+long words will not be broken up.
 
 #### input
 
@@ -46,7 +60,7 @@ Number of columns to wrap the text to.
 
 - [slice-ansi](https://github.com/chalk/slice-ansi) - Slice a string with ANSI escape codes
 - [chalk](https://github.com/chalk/chalk) - Terminal string styling done right
-
+- [jsesc](https://github.com/mathiasbynens/jsesc) - Generate ASCII-only output from Unicode strings. Useful for creating testing fixtures.
 
 ## License
 
