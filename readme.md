@@ -38,10 +38,11 @@ the following options can be provided:
 ### wrapAnsi.hard(input, columns)
 
 long words will be broken up so that they do not extend past the column width.
+Equivalent to `{hard: true}`.
 
 ### wrapAnsi.soft(input, columns)
 
-long words will not be broken up.
+long words will not be broken up. Equivalent to `{hard: false}`.
 
 #### input
 
