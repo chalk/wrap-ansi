@@ -19,7 +19,7 @@
   },
   "scripts": {
     "test": "xo && nyc node test.js",
-    "coverage": "xo && nyc --reporter=text-lcov node test.js | coveralls"
+    "coverage": "nyc --reporter=text-lcov node test.js | coveralls"
   },
   "files": [
     "index.js"
