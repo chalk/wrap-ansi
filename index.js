@@ -1,5 +1,4 @@
 'use strict';
-var stripAnsi = require('strip-ansi');
 var stringWidth = require('string-width');
 
 var ESCAPES = [
@@ -107,7 +106,7 @@ function invoke(str, cols, opts) {
 	var rows = [''];
 
 	for (var i = 0, word; (word = words[i]) !== undefined; i++) {
-		var rowLength = stripAnsi(rows[rows.length - 1]).length;
+		var rowLength = stringWidth(rows[rows.length - 1]);
 
 		if (rowLength) {
 			rows[rows.length - 1] += ' ';
