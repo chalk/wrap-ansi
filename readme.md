@@ -28,8 +28,7 @@ console.log(wrapAnsi(input, 20));
 
 ### wrapAnsi(input, columns, opts)
 
-wrap words to the specified column width. By default the wrap is
-`soft`, so long words may extend past the column length.
+wrap words to the specified column width. By default the wrap is `soft`, so long words may extend past the column length.
 
 the following options can be provided:
 
