@@ -1,5 +1,6 @@
 'use strict';
 var stripAnsi = require('strip-ansi');
+var stringWidth = require('string-width');
 
 var ESCAPES = [
 	'\u001b',
@@ -43,8 +44,8 @@ function wrapAnsi(code) {
 // calculate the length of words split on ' ', ignoring
 // the extra characters added by ansi escape codes.
 function wordLengths(str) {
-	return stripAnsi(str).split(' ').map(function (s) {
-		return s.length;
+	return str.split(' ').map(function (s) {
+		return stringWidth(s);
 	});
 }
 
