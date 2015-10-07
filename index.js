@@ -92,7 +92,7 @@ function wrapWord(rows, word, cols) {
 // than cols characters.
 //
 // 'soft' allows long words to expand past the column length.
-function invoke(str, cols, opts) {
+module.exports = function (str, cols, opts) {
 	var options = opts || {};
 
 	var pre = '';
@@ -165,16 +165,4 @@ function invoke(str, cols, opts) {
 	}
 
 	return ret;
-}
-
-// strings never extend past 'cols'.
-invoke.hard = function (str, cols) {
-	return invoke(str, cols, {hard: true});
 };
-
-// long words sometimes extend past 'cols'.
-invoke.soft = function (str, cols) {
-	return invoke(str, cols, {hard: false});
-};
-
-module.exports = invoke;

@@ -35,15 +35,6 @@ the following options can be provided:
 
 * `hard`: `boolean`, should hard wrapping be enabled?
 
-### wrapAnsi.hard(input, columns)
-
-long words will be broken up so that they do not extend past the column width.
-Equivalent to `{hard: true}`.
-
-### wrapAnsi.soft(input, columns)
-
-long words will not be broken up. Equivalent to `{hard: false}`.
-
 #### input
 
 Type: `string`

@@ -7,7 +7,7 @@ var fn = require('./');
 var fixture = 'The quick brown ' + chalk.red('fox jumped over ') + 'the lazy ' + chalk.green('dog and then ran away with the unicorn.');
 
 test(function (t) {
-	var res5 = fn.hard(fixture, 5);
+	var res5 = fn(fixture, 5, {hard: true});
 	var res20 = fn(fixture, 20);
 	var res30 = fn(fixture, 30);
 
