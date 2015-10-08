@@ -52,7 +52,7 @@
     "text"
   ],
   "dependencies": {
-    "splice-string": "^1.0.0"
+    "string-width": "^1.0.1"
   },
   "devDependencies": {
     "ava": "0.0.4",
