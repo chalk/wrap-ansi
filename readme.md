@@ -2,6 +2,7 @@
 
 > Wordwrap a string with [ANSI escape codes](http://en.wikipedia.org/wiki/ANSI_escape_code#Colors_and_Styles)
 
+
 ## Install
 
 ```
@@ -12,10 +13,10 @@ $ npm install --save wrap-ansi
 ## Usage
 
 ```js
-var chalk = require('chalk');
-var wrapAnsi = require('wrap-ansi');
+const chalk = require('chalk');
+const wrapAnsi = require('wrap-ansi');
 
-var input = 'The quick brown ' + chalk.red('fox jumped over ') +
+const input = 'The quick brown ' + chalk.red('fox jumped over ') +
 	'the lazy ' + chalk.green('dog and then ran away with the unicorn.');
 
 console.log(wrapAnsi(input, 20));
@@ -26,13 +27,9 @@ console.log(wrapAnsi(input, 20));
 
 ## API
 
-### wrapAnsi(input, columns, opts)
+### wrapAnsi(input, columns, [options])
 
-wrap words to the specified column width. By default the wrap is `soft`, so long words may extend past the column length.
-
-the following options can be provided:
-
-* `hard`: `boolean`, should hard wrapping be enabled?
+Wrap words to the specified column width.
 
 #### input
 
@@ -46,12 +43,20 @@ Type: `number`
 
 Number of columns to wrap the text to.
 
+#### options.hard
+
+Type: `boolean`  
+Default: `false`
+
+By default the wrap is soft, meaning long words may extend past the column width. Setting this to `true` will make it hard wrap at the column width.
+
 
 ## Related
 
 - [slice-ansi](https://github.com/chalk/slice-ansi) - Slice a string with ANSI escape codes
 - [chalk](https://github.com/chalk/chalk) - Terminal string styling done right
-- [jsesc](https://github.com/mathiasbynens/jsesc) - Generate ASCII-only output from Unicode strings. Useful for creating testing fixtures.
+- [jsesc](https://github.com/mathiasbynens/jsesc) - Generate ASCII-only output from Unicode strings. Useful for creating test fixtures.
+
 
 ## License
 
