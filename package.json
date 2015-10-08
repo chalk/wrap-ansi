@@ -12,7 +12,8 @@
   "maintainers": [
     "Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)",
     "Joshua Appelman <jappelman@xebia.com> (jbnicolai.com)",
-    "JD Ballard <i.am.qix@gmail.com> (github.com/qix-)"
+    "JD Ballard <i.am.qix@gmail.com> (github.com/qix-)",
+    "Benjamin Coe <ben@npmjs.com> (github.com/bcoe)"
   ],
   "engines": {
     "node": ">=0.10.0"
