@@ -97,9 +97,7 @@ module.exports = function (str, cols, opts) {
 
 	var pre = '';
 	var ret = '';
-	var insideEscape = false;
 	var escapeCode;
-	var visible = 0;
 
 	var lengths = wordLengths(str);
 	var words = str.split(' ');
@@ -123,7 +121,7 @@ module.exports = function (str, cols, opts) {
 			continue;
 		}
 
-		if (rowLength + lengths[i] > cols) {
+		if (rowLength + lengths[i] > cols && rowLength > 0) {
 			rows.push('');
 		}
 
@@ -134,8 +132,6 @@ module.exports = function (str, cols, opts) {
 		return r.trim();
 	}).join('\n');
 
-	visible = 0;
-
 	for (var j = 0; j < pre.length; j++) {
 		var y = pre[j];
 
@@ -144,16 +140,7 @@ module.exports = function (str, cols, opts) {
 		if (ESCAPES.indexOf(y) !== -1) {
 			var code = parseFloat(/[0-9][^m]*/.exec(pre.slice(j, j + 4)));
 			escapeCode = code === END_CODE ? null : code;
-		} else if (insideEscape && y === 'm') {
-			insideEscape = false;
-			continue;
 		}
-
-		if (insideEscape) {
-			continue;
-		}
-
-		visible++;
 
 		if (escapeCode && ESCAPE_CODES[escapeCode]) {
 			if (pre[j + 1] === '\n') {
