@@ -8,6 +8,7 @@ var fn = require('./');
 // when "hard" is false
 
 var fixture = 'The quick brown ' + chalk.red('fox jumped over ') + 'the lazy ' + chalk.green('dog and then ran away with the unicorn.');
+var fixture2 = '12345678\n901234567890';
 
 test('wraps string at 20 characters', function (t) {
 	var res20 = fn(fixture, 20);
@@ -85,5 +86,14 @@ test('removes last row if it contained only ansi escape codes', function (t) {
 test('does not prepend newline if first word is split', function (t) {
 	var res = fn(chalk.green('hello') + 'world', 5, {hard: true});
 	t.assert(res.split('\n').length === 2);
+	t.end();
+});
+
+test('takes into account line returns inside input', function (t) {
+	var res20 = fn(fixture2, 10, {hard: true});
+	t.assert(res20 === '12345678\n9012345678\n90');
+	t.assert(stripAnsi(res20).split('\n').every(function (x) {
+		return x.length <= 20;
+	}));
 	t.end();
 });
