@@ -92,8 +92,5 @@ test('does not prepend newline if first word is split', function (t) {
 test('takes into account line returns inside input', function (t) {
 	var res20 = fn(fixture2, 10, {hard: true});
 	t.assert(res20 === '12345678\n9012345678\n90');
-	t.assert(stripAnsi(res20).split('\n').every(function (x) {
-		return x.length <= 20;
-	}));
 	t.end();
 });
