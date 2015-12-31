@@ -19,7 +19,7 @@
     "node": ">=0.10.0"
   },
   "scripts": {
-    "test": "xo && nyc node test.js",
+    "test": "xo && nyc ava",
     "coverage": "nyc --reporter=text-lcov node test.js | coveralls"
   },
   "files": [
@@ -56,7 +56,7 @@
     "string-width": "^1.0.1"
   },
   "devDependencies": {
-    "ava": "0.0.4",
+    "ava": "*",
     "chalk": "^1.1.0",
     "coveralls": "^2.11.4",
     "has-ansi": "^2.0.0",
