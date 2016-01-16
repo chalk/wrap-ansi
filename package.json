@@ -20,7 +20,7 @@
   },
   "scripts": {
     "test": "xo && nyc ava",
-    "coverage": "nyc --reporter=text-lcov node test.js | coveralls"
+    "coveralls": "nyc report --reporter=text-lcov | coveralls"
   },
   "files": [
     "index.js"
