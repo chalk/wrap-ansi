@@ -54,6 +54,7 @@ By default the wrap is soft, meaning long words may extend past the column width
 ## Related
 
 - [slice-ansi](https://github.com/chalk/slice-ansi) - Slice a string with ANSI escape codes
+- [cli-truncate](https://github.com/sindresorhus/cli-truncate) - Truncate a string to a specific width in the terminal
 - [chalk](https://github.com/chalk/chalk) - Terminal string styling done right
 - [jsesc](https://github.com/mathiasbynens/jsesc) - Generate ASCII-only output from Unicode strings. Useful for creating test fixtures.
 
