@@ -72,3 +72,7 @@ test('takes into account line returns inside input', t => {
 test.skip('supports fullwidth characters', t => {
 	t.is(fn('안녕하세', 4, {hard: true}), '안녕\n하세');
 });
+
+test.skip('supports unicode surrogate pairs', t => {
+	t.is(fn('a\ud83c\ude00bc', 2, {hard: true}), 'a\n\ud83c\ude00\nbc');
+});
