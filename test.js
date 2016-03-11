@@ -68,3 +68,7 @@ test('takes into account line returns inside input', t => {
 	const res20 = fn(fixture2, 10, {hard: true});
 	t.is(res20, '12345678\n9012345678\n90');
 });
+
+test.skip('supports fullwidth characters', t => {
+	t.is(fn('안녕하세', 4, {hard: true}), '안녕\n하세');
+});
