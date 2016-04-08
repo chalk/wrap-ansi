@@ -43,9 +43,11 @@ Type: `number`
 
 Number of columns to wrap the text to.
 
-#### options.hard
+#### options
 
-Type: `boolean`  
+##### hard
+
+Type: `boolean`<br>
 Default: `false`
 
 By default the wrap is soft, meaning long words may extend past the column width. Setting this to `true` will make it hard wrap at the column width.
@@ -61,4 +63,4 @@ By default the wrap is soft, meaning long words may extend past the column width
 
 ## License
 
-MIT © [Sindre Sorhus](http://sindresorhus.com)
+MIT © [Sindre Sorhus](https://sindresorhus.com)
