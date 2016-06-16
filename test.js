@@ -69,11 +69,12 @@ test('takes into account line returns inside input', t => {
 	t.is(res20, '12345678\n9012345678\n90');
 });
 
-// TOOD: use `test.failing` for these when AVA 0.15.0 is out
-test.skip('supports fullwidth characters', t => { // eslint-disable-line
+// https://github.com/chalk/wrap-ansi/issues/10
+test.failing('supports fullwidth characters', t => {
 	t.is(fn('안녕하세', 4, {hard: true}), '안녕\n하세');
 });
 
-test.skip('supports unicode surrogate pairs', t => { // eslint-disable-line
+// https://github.com/chalk/wrap-ansi/issues/11
+test.failing('supports unicode surrogate pairs', t => {
 	t.is(fn('a\ud83c\ude00bc', 2, {hard: true}), 'a\n\ud83c\ude00\nbc');
 });
