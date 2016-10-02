@@ -52,6 +52,13 @@ Default: `false`
 
 By default the wrap is soft, meaning long words may extend past the column width. Setting this to `true` will make it hard wrap at the column width.
 
+##### wordWrap
+
+Type: `boolean`<br>
+Default: `true`
+
+By default, a line will be split at a space. When set to `false`, it can break words into two as well.
+
 
 ## Related
 

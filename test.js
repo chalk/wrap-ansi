@@ -8,6 +8,7 @@ import fn from './';
 
 const fixture = 'The quick brown ' + chalk.red('fox jumped over ') + 'the lazy ' + chalk.green('dog and then ran away with the unicorn.');
 const fixture2 = '12345678\n901234567890';
+const fixture3 = '12345678\n901234567890 12345';
 
 test('wraps string at 20 characters', t => {
 	const res20 = fn(fixture, 20);
@@ -67,6 +68,19 @@ test('does not prepend newline if first word is split', t => {
 test('takes into account line returns inside input', t => {
 	const res20 = fn(fixture2, 10, {hard: true});
 	t.is(res20, '12345678\n9012345678\n90');
+});
+
+test('word wrapping', t => {
+	const res = fn(fixture3, 15);
+	t.is(res, '12345678\n901234567890\n12345');
+});
+
+test('no word-wrapping', t => {
+	const res = fn(fixture3, 15, {wordWrap: false});
+	t.is(res, '12345678\n901234567890 12\n345');
+
+	const res2 = fn(fixture, 5, {wordWrap: false});
+	t.is(res2, 'The q\nuick\nbrown\n[31mfox j[39m\n[31mumped[39m\n[31mover[39m\n[31m[39mthe l\nazy [32md[39m\n[32mog an[39m\n[32md the[39m\n[32mn ran[39m\n[32maway[39m\n[32mwith[39m\n[32mthe u[39m\n[32mnicor[39m\n[32mn.[39m');
 });
 
 // https://github.com/chalk/wrap-ansi/issues/10
