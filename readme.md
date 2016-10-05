@@ -57,7 +57,7 @@ By default the wrap is soft, meaning long words may extend past the column width
 Type: `boolean`<br>
 Default: `true`
 
-By default, a line will be split at a space. When set to `false`, it can break words into two as well.
+By default, an attempt is made to split words at spaces, ensuring that they don't extend past the configured columns. If wordWrap is `false`, each column will instead be completely filled splitting words as necessary.
 
 
 ## Related
