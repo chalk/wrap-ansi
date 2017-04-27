@@ -4,6 +4,8 @@ import hasAnsi from 'has-ansi';
 import stripAnsi from 'strip-ansi';
 import fn from './';
 
+chalk.enabled = true;
+
 // when "hard" is false
 
 const fixture = 'The quick brown ' + chalk.red('fox jumped over ') + 'the lazy ' + chalk.green('dog and then ran away with the unicorn.');

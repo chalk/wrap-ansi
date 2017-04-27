@@ -57,12 +57,12 @@
     "strip-ansi": "^3.0.1"
   },
   "devDependencies": {
-    "ava": "^0.16.0",
+    "ava": "^0.17.0",
     "chalk": "^1.1.0",
     "coveralls": "^2.11.4",
     "has-ansi": "^2.0.0",
     "nyc": "^6.2.1",
     "strip-ansi": "^3.0.0",
-    "xo": "*"
+    "xo": "^0.16.0"
   }
 }
