@@ -113,7 +113,7 @@ const exec = (str, cols, opts) => {
 
 		let rowLength = stringWidth(rows[rows.length - 1]);
 
-		if (rowLength) {
+		if (rowLength || word === '') {
 			rows[rows.length - 1] += ' ';
 			rowLength++;
 		}
@@ -145,7 +145,7 @@ const exec = (str, cols, opts) => {
 		rows[rows.length - 1] += word;
 	}
 
-	pre = rows.map(x => x.trim()).join('\n');
+	pre = rows.map(r => options.trim === false ? r : r.trim()).join('\n');
 
 	for (const item of Array.from(pre).entries()) {
 		const i = item[0];

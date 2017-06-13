@@ -86,6 +86,14 @@ test('no word-wrapping', t => {
 	t.is(res3, 'The q\nuick\nbrown\n\u001B[31mfox j\u001B[39m\n\u001B[31mumped\u001B[39m\n\u001B[31mover\u001B[39m\n\u001B[31m\u001B[39mthe l\nazy \u001B[32md\u001B[39m\n\u001B[32mog an\u001B[39m\n\u001B[32md the\u001B[39m\n\u001B[32mn ran\u001B[39m\n\u001B[32maway\u001B[39m\n\u001B[32mwith\u001B[39m\n\u001B[32mthe u\u001B[39m\n\u001B[32mnicor\u001B[39m\n\u001B[32mn.\u001B[39m');
 });
 
+test('no word-wrapping and no trimming', t => {
+	const res = m(fixture3, 10, {wordWrap: false, trim: false});
+	t.is(res, '12345678\n901234567890 \n12345');
+
+	const res2 = m(fixture, 5, {wordWrap: false, trim: false});
+	t.is(res2, 'The q\nuick \nbrown \n[31mfox j[39m\n[31mumped [39m\n[31mover [39m\n[31m[39mthe l\nazy [32md[39m\n[32mog an[39m\n[32md the[39m\n[32mn ran [39m\n[32maway [39m\n[32mwith [39m\n[32mthe u[39m\n[32mnicor[39m\n[32mn.[39m');
+});
+
 test('supports fullwidth characters', t => {
 	t.is(m('안녕하세', 4, {hard: true}), '안녕\n하세');
 });
