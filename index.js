@@ -131,7 +131,7 @@ function exec(str, cols, opts) {
 			rows.push('');
 		}
 
-		if (options.wordWrap === false) {
+		if (rowLength + lengths[i] > cols && options.wordWrap === false) {
 			wrapWord(rows, word, cols);
 			continue;
 		}
