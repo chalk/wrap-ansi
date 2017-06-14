@@ -131,6 +131,11 @@ function exec(str, cols, opts) {
 			rows.push('');
 		}
 
+		if (options.wordWrap === false) {
+			wrapWord(rows, word, cols);
+			continue;
+		}
+
 		rows[rows.length - 1] += word;
 	}
 
