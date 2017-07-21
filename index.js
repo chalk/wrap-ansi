@@ -46,14 +46,21 @@ const wordLengths = str => str.split(' ').map(s => stringWidth(s));
 // Wrap a long word across multiple rows
 // Ansi escape codes do not count towards length
 const wrapWord = (rows, word, cols) => {
-	let insideEscape = false;
-	let visible = stripAnsi(rows[rows.length - 1]).length;
+	const arr = Array.from(word);
 
-	for (const item of Array.from(word).entries()) {
+	let insideEscape = false;
+	let visible = stringWidth(stripAnsi(rows[rows.length - 1]));
+
+	for (const item of arr.entries()) {
 		const i = item[0];
 		const x = item[1];
+		const charLength = stringWidth(x);
 
-		rows[rows.length - 1] += x;
+		if (visible + charLength <= cols) {
+			rows[rows.length - 1] += x;
+		} else {
+			rows.push(x);
+		}
 
 		if (ESCAPES.indexOf(x) !== -1) {
 			insideEscape = true;
@@ -66,9 +73,9 @@ const wrapWord = (rows, word, cols) => {
 			continue;
 		}
 
-		visible++;
+		visible += charLength;
 
-		if (visible >= cols && i < word.length - 1) {
+		if (visible >= cols && i < arr.length - 1) {
 			rows.push('');
 			visible = 0;
 		}
@@ -167,6 +174,7 @@ const exec = (str, cols, opts) => {
 // For each newline, invoke the method separately
 module.exports = (str, cols, opts) => {
 	return String(str)
+		.normalize()
 		.split('\n')
 		.map(line => exec(line, cols, opts))
 		.join('\n');

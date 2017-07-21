@@ -87,11 +87,11 @@ test('no word-wrapping', t => {
 });
 
 // https://github.com/chalk/wrap-ansi/issues/10
-test.failing('supports fullwidth characters', t => {
+test('supports fullwidth characters', t => {
 	t.is(m('안녕하세', 4, {hard: true}), '안녕\n하세');
 });
 
 // https://github.com/chalk/wrap-ansi/issues/11
-test.failing('supports unicode surrogate pairs', t => {
+test('supports unicode surrogate pairs', t => {
 	t.is(m('a\ud83c\ude00bc', 2, {hard: true}), 'a\n\ud83c\ude00\nbc');
 });
