@@ -53,19 +53,19 @@ const wrapWord = (rows, word, cols) => {
 
 	for (const item of arr.entries()) {
 		const i = item[0];
-		const x = item[1];
-		const charLength = stringWidth(x);
+		const char = item[1];
+		const charLength = stringWidth(char);
 
 		if (visible + charLength <= cols) {
-			rows[rows.length - 1] += x;
+			rows[rows.length - 1] += char;
 		} else {
-			rows.push(x);
+			rows.push(char);
 			visible = 0;
 		}
 
-		if (ESCAPES.indexOf(x) !== -1) {
+		if (ESCAPES.indexOf(char) !== -1) {
 			insideEscape = true;
-		} else if (insideEscape && x === 'm') {
+		} else if (insideEscape && char === 'm') {
 			insideEscape = false;
 			continue;
 		}
@@ -109,7 +109,7 @@ const exec = (str, cols, opts) => {
 
 	for (const item of Array.from(words).entries()) {
 		const i = item[0];
-		const x = item[1];
+		const word = item[1];
 
 		let rowLength = stringWidth(rows[rows.length - 1]);
 
@@ -124,13 +124,13 @@ const exec = (str, cols, opts) => {
 			if (rowLength) {
 				rows.push('');
 			}
-			wrapWord(rows, x, cols);
+			wrapWord(rows, word, cols);
 			continue;
 		}
 
 		if (rowLength + lengths[i] > cols && rowLength > 0) {
 			if (options.wordWrap === false && rowLength < cols) {
-				wrapWord(rows, x, cols);
+				wrapWord(rows, word, cols);
 				continue;
 			}
 
@@ -138,11 +138,11 @@ const exec = (str, cols, opts) => {
 		}
 
 		if (rowLength + lengths[i] > cols && options.wordWrap === false) {
-			wrapWord(rows, x, cols);
+			wrapWord(rows, word, cols);
 			continue;
 		}
 
-		rows[rows.length - 1] += x;
+		rows[rows.length - 1] += word;
 	}
 
 	pre = rows.map(x => x.trim()).join('\n');

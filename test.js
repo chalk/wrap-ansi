@@ -91,6 +91,6 @@ test('supports fullwidth characters', t => {
 });
 
 test('supports unicode surrogate pairs', t => {
-	t.is(m('a\ud83c\ude00bc', 2, {hard: true}), 'a\n\ud83c\ude00\nbc');
-	t.is(m('a\ud83c\ude00bc\ud83c\ude00d\ud83c\ude00', 2, {hard: true}), 'a\n\ud83c\ude00\nbc\n\ud83c\ude00\nd\n\ud83c\ude00');
+	t.is(m('a\uD83C\uDE00bc', 2, {hard: true}), 'a\n\uD83C\uDE00\nbc');
+	t.is(m('a\uD83C\uDE00bc\uD83C\uDE00d\uD83C\uDE00', 2, {hard: true}), 'a\n\uD83C\uDE00\nbc\n\uD83C\uDE00\nd\n\uD83C\uDE00');
 });
