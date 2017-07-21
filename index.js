@@ -45,12 +45,13 @@ const wordLengths = str => str.split(' ').map(s => stringWidth(s));
 
 // Wrap a long word across multiple rows
 // Ansi escape codes do not count towards length
-function wrapWord(rows, word, cols) {
+const wrapWord = (rows, word, cols) => {
 	let insideEscape = false;
 	let visible = stripAnsi(rows[rows.length - 1]).length;
 
-	for (let i = 0; i < word.length; i++) {
-		const x = word[i];
+	for (const item of Array.from(word).entries()) {
+		const i = item[0];
+		const x = item[1];
 
 		rows[rows.length - 1] += x;
 
@@ -78,7 +79,7 @@ function wrapWord(rows, word, cols) {
 	if (!visible && rows[rows.length - 1].length > 0 && rows.length > 1) {
 		rows[rows.length - 2] += rows.pop();
 	}
-}
+};
 
 // The wrap-ansi module can be invoked
 // in either 'hard' or 'soft' wrap mode
@@ -87,7 +88,7 @@ function wrapWord(rows, word, cols) {
 // than cols characters
 //
 // 'soft' allows long words to expand past the column length
-function exec(str, cols, opts) {
+const exec = (str, cols, opts) => {
 	const options = opts || {};
 
 	let pre = '';
@@ -98,7 +99,10 @@ function exec(str, cols, opts) {
 	const words = str.split(' ');
 	const rows = [''];
 
-	for (let i = 0, word; (word = words[i]) !== undefined; i++) {
+	for (const item of Array.from(words).entries()) {
+		const i = item[0];
+		const x = item[1];
+
 		let rowLength = stringWidth(rows[rows.length - 1]);
 
 		if (rowLength) {
@@ -112,13 +116,13 @@ function exec(str, cols, opts) {
 			if (rowLength) {
 				rows.push('');
 			}
-			wrapWord(rows, word, cols);
+			wrapWord(rows, x, cols);
 			continue;
 		}
 
 		if (rowLength + lengths[i] > cols && rowLength > 0) {
 			if (options.wordWrap === false && rowLength < cols) {
-				wrapWord(rows, word, cols);
+				wrapWord(rows, x, cols);
 				continue;
 			}
 
@@ -126,38 +130,39 @@ function exec(str, cols, opts) {
 		}
 
 		if (rowLength + lengths[i] > cols && options.wordWrap === false) {
-			wrapWord(rows, word, cols);
+			wrapWord(rows, x, cols);
 			continue;
 		}
 
-		rows[rows.length - 1] += word;
+		rows[rows.length - 1] += x;
 	}
 
 	pre = rows.map(x => x.trim()).join('\n');
 
-	for (let j = 0; j < pre.length; j++) {
-		const y = pre[j];
+	for (const item of Array.from(pre).entries()) {
+		const i = item[0];
+		const x = item[1];
 
-		ret += y;
+		ret += x;
 
-		if (ESCAPES.indexOf(y) !== -1) {
-			const code = parseFloat(/\d[^m]*/.exec(pre.slice(j, j + 4)));
+		if (ESCAPES.indexOf(x) !== -1) {
+			const code = parseFloat(/\d[^m]*/.exec(pre.slice(i, i + 4)));
 			escapeCode = code === END_CODE ? null : code;
 		}
 
-		const code = ESCAPE_CODES.get(parseInt(escapeCode, 10));
+		const code = ESCAPE_CODES.get(Number(escapeCode));
 
 		if (escapeCode && code) {
-			if (pre[j + 1] === '\n') {
+			if (pre[i + 1] === '\n') {
 				ret += wrapAnsi(code);
-			} else if (y === '\n') {
+			} else if (x === '\n') {
 				ret += wrapAnsi(escapeCode);
 			}
 		}
 	}
 
 	return ret;
-}
+};
 
 // For each newline, invoke the method separately
 module.exports = (str, cols, opts) => {
