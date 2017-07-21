@@ -87,7 +87,7 @@ test('no word-wrapping', t => {
 });
 
 test('no word-wrapping and no trimming', t => {
-	const res = m(fixture3, 10, {wordWrap: false, trim: false});
+	const res = m(fixture3, 13, {wordWrap: false, trim: false});
 	t.is(res, '12345678\n901234567890 \n12345');
 
 	const res2 = m(fixture, 5, {wordWrap: false, trim: false});
