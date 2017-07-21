@@ -60,6 +60,7 @@ const wrapWord = (rows, word, cols) => {
 			rows[rows.length - 1] += x;
 		} else {
 			rows.push(x);
+			visible = 0;
 		}
 
 		if (ESCAPES.indexOf(x) !== -1) {
@@ -75,7 +76,7 @@ const wrapWord = (rows, word, cols) => {
 
 		visible += charLength;
 
-		if (visible >= cols && i < arr.length - 1) {
+		if (visible === cols && i < arr.length - 1) {
 			rows.push('');
 			visible = 0;
 		}
