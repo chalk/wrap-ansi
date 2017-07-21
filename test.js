@@ -81,8 +81,11 @@ test('no word-wrapping', t => {
 	const res = fn(fixture3, 15, {wordWrap: false});
 	t.is(res, '12345678\n901234567890 12\n345');
 
-	const res2 = fn(fixture, 5, {wordWrap: false});
-	t.is(res2, 'The q\nuick\nbrown\n[31mfox j[39m\n[31mumped[39m\n[31mover[39m\n[31m[39mthe l\nazy [32md[39m\n[32mog an[39m\n[32md the[39m\n[32mn ran[39m\n[32maway[39m\n[32mwith[39m\n[32mthe u[39m\n[32mnicor[39m\n[32mn.[39m');
+	const res2 = fn(fixture3, 5, {wordWrap: false});
+	t.is(res2, '12345\n678\n90123\n45678\n90 12\n345');
+
+	const res3 = fn(fixture, 5, {wordWrap: false});
+	t.is(res3, 'The q\nuick\nbrown\n[31mfox j[39m\n[31mumped[39m\n[31mover[39m\n[31m[39mthe l\nazy [32md[39m\n[32mog an[39m\n[32md the[39m\n[32mn ran[39m\n[32maway[39m\n[32mwith[39m\n[32mthe u[39m\n[32mnicor[39m\n[32mn.[39m');
 });
 
 // https://github.com/chalk/wrap-ansi/issues/10
