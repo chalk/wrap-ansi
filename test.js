@@ -91,11 +91,15 @@ test('no word-wrapping and no trimming', t => {
 	t.is(res, '12345678\n901234567890 \n12345');
 
 	const res2 = m(fixture, 5, {wordWrap: false, trim: false});
+<<<<<<< 59f01f50129d64264b9ac8e94d01539ff52c9271
 <<<<<<< eb6aa7fe5e8d37bd577b1bc3a7c8d79bf4402975
 	t.is(res2, 'The q\nuick \nbrown \n[31mfox j[39m\n[31mumped [39m\n[31mover [39m\n[31m[39mthe l\nazy [32md[39m\n[32mog an[39m\n[32md the[39m\n[32mn ran [39m\n[32maway [39m\n[32mwith [39m\n[32mthe u[39m\n[32mnicor[39m\n[32mn.[39m');
 =======
 	t.is(res2, 'The q\nuick \nbrown \n\u001B[31mfox j\u001B[39m\n\u001B[31mumped \u001B[39m\n\u001B[31mover \u001B[39m\n\u001B[31m\u001B[39mthe l\nazy \u001B[32md\u001B[39m\n\u001B[32mog an\u001B[39m\n\u001B[32md the\u001B[39m\n\u001B[32mn ran \u001B[39m\n\u001B[32maway \u001B[39m\n\u001B[32mwith \u001B[39m\n\u001B[32mthe u\u001B[39m\n\u001B[32mnicor\u001B[39m\n\u001B[32mn.\u001B[39m');
 >>>>>>> Update test.js
+=======
+	t.is(res2, 'The q\nuick \nbrown\n \u001B[31mfox \u001B[39m\n[31mjumpe[39m\n[31md ove[39m\n[31mr \u001B[39mthe\n lazy\n \u001B[32mdog \u001B[39m\n[32mand t[39m\n[32mhen r[39m\n[32man aw[39m\n[32may wi[39m\n[32mth th[39m\n[32me uni[39m\n[32mcorn.\u001B[39m');
+>>>>>>> fix trimming
 });
 
 test('supports fullwidth characters', t => {
