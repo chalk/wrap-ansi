@@ -2,10 +2,10 @@
 const stringWidth = require('string-width');
 const stripAnsi = require('strip-ansi');
 
-const ESCAPES = [
+const ESCAPES = new Set([
 	'\u001B',
 	'\u009B'
-];
+]);
 
 const END_CODE = 39;
 
@@ -37,7 +37,7 @@ const ESCAPE_CODES = new Map([
 	[47, 49]
 ]);
 
-const wrapAnsi = code => `${ESCAPES[0]}[${code}m`;
+const wrapAnsi = code => `${ESCAPES.values().next().value}[${code}m`;
 
 // Calculate the length of words split on ' ', ignoring
 // the extra characters added by ansi escape codes
@@ -63,7 +63,7 @@ const wrapWord = (rows, word, cols) => {
 			visible = 0;
 		}
 
-		if (ESCAPES.indexOf(char) !== -1) {
+		if (ESCAPES.has(char)) {
 			insideEscape = true;
 		} else if (insideEscape && char === 'm') {
 			insideEscape = false;
@@ -149,11 +149,11 @@ const exec = (str, cols, opts) => {
 
 	for (const item of Array.from(pre).entries()) {
 		const i = item[0];
-		const x = item[1];
+		const char = item[1];
 
-		ret += x;
+		ret += char;
 
-		if (ESCAPES.indexOf(x) !== -1) {
+		if (ESCAPES.has(char)) {
 			const code = parseFloat(/\d[^m]*/.exec(pre.slice(i, i + 4)));
 			escapeCode = code === END_CODE ? null : code;
 		}
@@ -163,7 +163,7 @@ const exec = (str, cols, opts) => {
 		if (escapeCode && code) {
 			if (pre[i + 1] === '\n') {
 				ret += wrapAnsi(code);
-			} else if (x === '\n') {
+			} else if (char === '\n') {
 				ret += wrapAnsi(escapeCode);
 			}
 		}
