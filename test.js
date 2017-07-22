@@ -86,12 +86,11 @@ test('no word-wrapping', t => {
 	t.is(res3, 'The q\nuick\nbrown\n\u001B[31mfox j\u001B[39m\n\u001B[31mumped\u001B[39m\n\u001B[31mover\u001B[39m\n\u001B[31m\u001B[39mthe l\nazy \u001B[32md\u001B[39m\n\u001B[32mog an\u001B[39m\n\u001B[32md the\u001B[39m\n\u001B[32mn ran\u001B[39m\n\u001B[32maway\u001B[39m\n\u001B[32mwith\u001B[39m\n\u001B[32mthe u\u001B[39m\n\u001B[32mnicor\u001B[39m\n\u001B[32mn.\u001B[39m');
 });
 
-// https://github.com/chalk/wrap-ansi/issues/10
-test.failing('supports fullwidth characters', t => {
+test('supports fullwidth characters', t => {
 	t.is(m('안녕하세', 4, {hard: true}), '안녕\n하세');
 });
 
-// https://github.com/chalk/wrap-ansi/issues/11
-test.failing('supports unicode surrogate pairs', t => {
-	t.is(m('a\ud83c\ude00bc', 2, {hard: true}), 'a\n\ud83c\ude00\nbc');
+test('supports unicode surrogate pairs', t => {
+	t.is(m('a\uD83C\uDE00bc', 2, {hard: true}), 'a\n\uD83C\uDE00\nbc');
+	t.is(m('a\uD83C\uDE00bc\uD83C\uDE00d\uD83C\uDE00', 2, {hard: true}), 'a\n\uD83C\uDE00\nbc\n\uD83C\uDE00\nd\n\uD83C\uDE00');
 });

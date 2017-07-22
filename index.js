@@ -2,10 +2,10 @@
 const stringWidth = require('string-width');
 const stripAnsi = require('strip-ansi');
 
-const ESCAPES = [
+const ESCAPES = new Set([
 	'\u001B',
 	'\u009B'
-];
+]);
 
 const END_CODE = 39;
 
@@ -37,7 +37,7 @@ const ESCAPE_CODES = new Map([
 	[47, 49]
 ]);
 
-const wrapAnsi = code => `${ESCAPES[0]}[${code}m`;
+const wrapAnsi = code => `${ESCAPES.values().next().value}[${code}m`;
 
 // Calculate the length of words split on ' ', ignoring
 // the extra characters added by ansi escape codes
@@ -45,18 +45,27 @@ const wordLengths = str => str.split(' ').map(s => stringWidth(s));
 
 // Wrap a long word across multiple rows
 // Ansi escape codes do not count towards length
-function wrapWord(rows, word, cols) {
+const wrapWord = (rows, word, cols) => {
+	const arr = Array.from(word);
+
 	let insideEscape = false;
-	let visible = stripAnsi(rows[rows.length - 1]).length;
+	let visible = stringWidth(stripAnsi(rows[rows.length - 1]));
 
-	for (let i = 0; i < word.length; i++) {
-		const x = word[i];
+	for (const item of arr.entries()) {
+		const i = item[0];
+		const char = item[1];
+		const charLength = stringWidth(char);
 
-		rows[rows.length - 1] += x;
+		if (visible + charLength <= cols) {
+			rows[rows.length - 1] += char;
+		} else {
+			rows.push(char);
+			visible = 0;
+		}
 
-		if (ESCAPES.indexOf(x) !== -1) {
+		if (ESCAPES.has(char)) {
 			insideEscape = true;
-		} else if (insideEscape && x === 'm') {
+		} else if (insideEscape && char === 'm') {
 			insideEscape = false;
 			continue;
 		}
@@ -65,9 +74,9 @@ function wrapWord(rows, word, cols) {
 			continue;
 		}
 
-		visible++;
+		visible += charLength;
 
-		if (visible >= cols && i < word.length - 1) {
+		if (visible === cols && i < arr.length - 1) {
 			rows.push('');
 			visible = 0;
 		}
@@ -78,7 +87,7 @@ function wrapWord(rows, word, cols) {
 	if (!visible && rows[rows.length - 1].length > 0 && rows.length > 1) {
 		rows[rows.length - 2] += rows.pop();
 	}
-}
+};
 
 // The wrap-ansi module can be invoked
 // in either 'hard' or 'soft' wrap mode
@@ -87,7 +96,7 @@ function wrapWord(rows, word, cols) {
 // than cols characters
 //
 // 'soft' allows long words to expand past the column length
-function exec(str, cols, opts) {
+const exec = (str, cols, opts) => {
 	const options = opts || {};
 
 	let pre = '';
@@ -98,7 +107,10 @@ function exec(str, cols, opts) {
 	const words = str.split(' ');
 	const rows = [''];
 
-	for (let i = 0, word; (word = words[i]) !== undefined; i++) {
+	for (const item of Array.from(words).entries()) {
+		const i = item[0];
+		const word = item[1];
+
 		let rowLength = stringWidth(rows[rows.length - 1]);
 
 		if (rowLength) {
@@ -135,33 +147,35 @@ function exec(str, cols, opts) {
 
 	pre = rows.map(x => x.trim()).join('\n');
 
-	for (let j = 0; j < pre.length; j++) {
-		const y = pre[j];
+	for (const item of Array.from(pre).entries()) {
+		const i = item[0];
+		const char = item[1];
 
-		ret += y;
+		ret += char;
 
-		if (ESCAPES.indexOf(y) !== -1) {
-			const code = parseFloat(/\d[^m]*/.exec(pre.slice(j, j + 4)));
+		if (ESCAPES.has(char)) {
+			const code = parseFloat(/\d[^m]*/.exec(pre.slice(i, i + 4)));
 			escapeCode = code === END_CODE ? null : code;
 		}
 
-		const code = ESCAPE_CODES.get(parseInt(escapeCode, 10));
+		const code = ESCAPE_CODES.get(Number(escapeCode));
 
 		if (escapeCode && code) {
-			if (pre[j + 1] === '\n') {
+			if (pre[i + 1] === '\n') {
 				ret += wrapAnsi(code);
-			} else if (y === '\n') {
+			} else if (char === '\n') {
 				ret += wrapAnsi(escapeCode);
 			}
 		}
 	}
 
 	return ret;
-}
+};
 
 // For each newline, invoke the method separately
 module.exports = (str, cols, opts) => {
 	return String(str)
+		.normalize()
 		.split('\n')
 		.map(line => exec(line, cols, opts))
 		.join('\n');
