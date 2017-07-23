@@ -99,6 +99,10 @@ const wrapWord = (rows, word, cols) => {
 const exec = (str, cols, opts) => {
 	const options = opts || {};
 
+	if (str.trim() === '') {
+		return options.trim === false ? str : str.trim();
+	}
+
 	let pre = '';
 	let ret = '';
 	let escapeCode;
