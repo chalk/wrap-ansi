@@ -111,9 +111,16 @@ const exec = (str, cols, opts) => {
 		const i = item[0];
 		const word = item[1];
 
+		rows[rows.length - 1] = options.trim === false ? rows[rows.length - 1] : rows[rows.length - 1].trim();
 		let rowLength = stringWidth(rows[rows.length - 1]);
 
-		if (rowLength) {
+		if (rowLength || word === '') {
+			if (rowLength === cols && options.wordWrap === false) {
+				// If we start with a new word but the current row length equals the length of the columns, add a new row
+				rows.push('');
+				rowLength = 0;
+			}
+
 			rows[rows.length - 1] += ' ';
 			rowLength++;
 		}
@@ -145,7 +152,7 @@ const exec = (str, cols, opts) => {
 		rows[rows.length - 1] += word;
 	}
 
-	pre = rows.map(x => x.trim()).join('\n');
+	pre = rows.map(r => options.trim === false ? r : r.trim()).join('\n');
 
 	for (const item of Array.from(pre).entries()) {
 		const i = item[0];
