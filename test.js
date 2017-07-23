@@ -11,6 +11,8 @@ chalk.enabled = true;
 const fixture = 'The quick brown ' + chalk.red('fox jumped over ') + 'the lazy ' + chalk.green('dog and then ran away with the unicorn.');
 const fixture2 = '12345678\n901234567890';
 const fixture3 = '12345678\n901234567890 12345';
+const fixture4 = '12345678\n';
+const fixture5 = '12345678\n ';
 
 test('wraps string at 20 characters', t => {
 	const res20 = m(fixture, 20);
@@ -82,16 +84,25 @@ test('no word-wrapping', t => {
 	const res2 = m(fixture3, 5, {wordWrap: false});
 	t.is(res2, '12345\n678\n90123\n45678\n90 12\n345');
 
-	const res3 = m(fixture, 5, {wordWrap: false});
-	t.is(res3, 'The q\nuick\nbrown\n\u001B[31mfox j\u001B[39m\n\u001B[31mumped\u001B[39m\n\u001B[31mover\u001B[39m\n\u001B[31m\u001B[39mthe l\nazy \u001B[32md\u001B[39m\n\u001B[32mog an\u001B[39m\n\u001B[32md the\u001B[39m\n\u001B[32mn ran\u001B[39m\n\u001B[32maway\u001B[39m\n\u001B[32mwith\u001B[39m\n\u001B[32mthe u\u001B[39m\n\u001B[32mnicor\u001B[39m\n\u001B[32mn.\u001B[39m');
+	const res3 = m(fixture5, 5, {wordWrap: false});
+	t.is(res3, '12345\n678\n');
+
+	const res4 = m(fixture, 5, {wordWrap: false});
+	t.is(res4, 'The q\nuick\nbrown\n\u001B[31mfox j\u001B[39m\n\u001B[31mumped\u001B[39m\n\u001B[31mover\u001B[39m\n\u001B[31m\u001B[39mthe l\nazy \u001B[32md\u001B[39m\n\u001B[32mog an\u001B[39m\n\u001B[32md the\u001B[39m\n\u001B[32mn ran\u001B[39m\n\u001B[32maway\u001B[39m\n\u001B[32mwith\u001B[39m\n\u001B[32mthe u\u001B[39m\n\u001B[32mnicor\u001B[39m\n\u001B[32mn.\u001B[39m');
 });
 
 test('no word-wrapping and no trimming', t => {
 	const res = m(fixture3, 13, {wordWrap: false, trim: false});
 	t.is(res, '12345678\n901234567890 \n12345');
 
-	const res2 = m(fixture, 5, {wordWrap: false, trim: false});
-	t.is(res2, 'The q\nuick \nbrown\n \u001B[31mfox \u001B[39m\n[31mjumpe[39m\n[31md ove[39m\n[31mr \u001B[39mthe\n lazy\n \u001B[32mdog \u001B[39m\n[32mand t[39m\n[32mhen r[39m\n[32man aw[39m\n[32may wi[39m\n[32mth th[39m\n[32me uni[39m\n[32mcorn.\u001B[39m');
+	const res2 = m(fixture4, 5, {wordWrap: false, trim: false});
+	t.is(res2, '12345\n678\n');
+
+	const res3 = m(fixture5, 5, {wordWrap: false, trim: false});
+	t.is(res3, '12345\n678\n ');
+
+	const res4 = m(fixture, 5, {wordWrap: false, trim: false});
+	t.is(res4, 'The q\nuick \nbrown\n \u001B[31mfox \u001B[39m\n[31mjumpe[39m\n[31md ove[39m\n[31mr \u001B[39mthe\n lazy\n \u001B[32mdog \u001B[39m\n[32mand t[39m\n[32mhen r[39m\n[32man aw[39m\n[32may wi[39m\n[32mth th[39m\n[32me uni[39m\n[32mcorn.\u001B[39m');
 });
 
 test('supports fullwidth characters', t => {
