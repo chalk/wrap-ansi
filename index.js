@@ -111,7 +111,8 @@ const exec = (str, cols, opts) => {
 		const i = item[0];
 		const word = item[1];
 
-		let rowLength = stringWidth(options.trim === false ? rows[rows.length - 1] : rows[rows.length - 1].trim());
+		rows[rows.length - 1] = options.trim === false ? rows[rows.length - 1] : rows[rows.length - 1].trim();
+		let rowLength = stringWidth(rows[rows.length - 1]);
 
 		if (rowLength || word === '') {
 			if (rowLength === cols && options.wordWrap === false) {
