@@ -1,6 +1,7 @@
 'use strict';
 const stringWidth = require('string-width');
 const stripAnsi = require('strip-ansi');
+const ansiStyles = require('ansi-styles');
 
 const ESCAPES = new Set([
 	'\u001B',
@@ -8,34 +9,6 @@ const ESCAPES = new Set([
 ]);
 
 const END_CODE = 39;
-
-const ESCAPE_CODES = new Map([
-	[0, 0],
-	[1, 22],
-	[2, 22],
-	[3, 23],
-	[4, 24],
-	[7, 27],
-	[8, 28],
-	[9, 29],
-	[30, 39],
-	[31, 39],
-	[32, 39],
-	[33, 39],
-	[34, 39],
-	[35, 39],
-	[36, 39],
-	[37, 39],
-	[90, 39],
-	[40, 49],
-	[41, 49],
-	[42, 49],
-	[43, 49],
-	[44, 49],
-	[45, 49],
-	[46, 49],
-	[47, 49]
-]);
 
 const wrapAnsi = code => `${ESCAPES.values().next().value}[${code}m`;
 
@@ -169,7 +142,7 @@ const exec = (str, cols, opts) => {
 			escapeCode = code === END_CODE ? null : code;
 		}
 
-		const code = ESCAPE_CODES.get(Number(escapeCode));
+		const code = ansiStyles.codes.get(Number(escapeCode));
 
 		if (escapeCode && code) {
 			if (pre[i + 1] === '\n') {
