@@ -14,31 +14,29 @@ const wrapAnsi = code => `${ESCAPES.values().next().value}[${code}m`;
 
 // Calculate the length of words split on ' ', ignoring
 // the extra characters added by ansi escape codes
-const wordLengths = str => str.split(' ').map(s => stringWidth(s));
+const wordLengths = string => string.split(' ').map(character => stringWidth(character));
 
 // Wrap a long word across multiple rows
 // Ansi escape codes do not count towards length
-const wrapWord = (rows, word, cols) => {
-	const arr = Array.from(word);
+const wrapWord = (rows, word, columns) => {
+	const characters = [...word];
 
 	let insideEscape = false;
 	let visible = stringWidth(stripAnsi(rows[rows.length - 1]));
 
-	for (const item of arr.entries()) {
-		const i = item[0];
-		const char = item[1];
-		const charLength = stringWidth(char);
+	for (const [index, character] of characters.entries()) {
+		const characterLength = stringWidth(character);
 
-		if (visible + charLength <= cols) {
-			rows[rows.length - 1] += char;
+		if (visible + characterLength <= columns) {
+			rows[rows.length - 1] += character;
 		} else {
-			rows.push(char);
+			rows.push(character);
 			visible = 0;
 		}
 
-		if (ESCAPES.has(char)) {
+		if (ESCAPES.has(character)) {
 			insideEscape = true;
-		} else if (insideEscape && char === 'm') {
+		} else if (insideEscape && character === 'm') {
 			insideEscape = false;
 			continue;
 		}
@@ -47,9 +45,9 @@ const wrapWord = (rows, word, cols) => {
 			continue;
 		}
 
-		visible += charLength;
+		visible += characterLength;
 
-		if (visible === cols && i < arr.length - 1) {
+		if (visible === columns && index < characters.length - 1) {
 			rows.push('');
 			visible = 0;
 		}
@@ -66,33 +64,27 @@ const wrapWord = (rows, word, cols) => {
 // in either 'hard' or 'soft' wrap mode
 //
 // 'hard' will never allow a string to take up more
-// than cols characters
+// than columns characters
 //
 // 'soft' allows long words to expand past the column length
-const exec = (str, cols, opts) => {
-	const options = opts || {};
-
-	if (str.trim() === '') {
-		return options.trim === false ? str : str.trim();
+const exec = (string, columns, options = {}) => {
+	if (string.trim() === '') {
+		return options.trim === false ? string : string.trim();
 	}
 
 	let pre = '';
 	let ret = '';
 	let escapeCode;
 
-	const lengths = wordLengths(str);
-	const words = str.split(' ');
+	const lengths = wordLengths(string);
 	const rows = [''];
 
-	for (const item of Array.from(words).entries()) {
-		const i = item[0];
-		const word = item[1];
-
+	for (const [index, word] of string.split(' ').entries()) {
 		rows[rows.length - 1] = options.trim === false ? rows[rows.length - 1] : rows[rows.length - 1].trim();
 		let rowLength = stringWidth(rows[rows.length - 1]);
 
 		if (rowLength || word === '') {
-			if (rowLength === cols && options.wordWrap === false) {
+			if (rowLength === columns && options.wordWrap === false) {
 				// If we start with a new word but the current row length equals the length of the columns, add a new row
 				rows.push('');
 				rowLength = 0;
@@ -103,51 +95,48 @@ const exec = (str, cols, opts) => {
 		}
 
 		// In 'hard' wrap mode, the length of a line is
-		// never allowed to extend past 'cols'
-		if (lengths[i] > cols && options.hard) {
+		// never allowed to extend past 'columns'
+		if (lengths[index] > columns && options.hard) {
 			if (rowLength) {
 				rows.push('');
 			}
-			wrapWord(rows, word, cols);
+			wrapWord(rows, word, columns);
 			continue;
 		}
 
-		if (rowLength + lengths[i] > cols && rowLength > 0) {
-			if (options.wordWrap === false && rowLength < cols) {
-				wrapWord(rows, word, cols);
+		if (rowLength + lengths[index] > columns && rowLength > 0) {
+			if (options.wordWrap === false && rowLength < columns) {
+				wrapWord(rows, word, columns);
 				continue;
 			}
 
 			rows.push('');
 		}
 
-		if (rowLength + lengths[i] > cols && options.wordWrap === false) {
-			wrapWord(rows, word, cols);
+		if (rowLength + lengths[index] > columns && options.wordWrap === false) {
+			wrapWord(rows, word, columns);
 			continue;
 		}
 
 		rows[rows.length - 1] += word;
 	}
 
-	pre = rows.map(r => options.trim === false ? r : r.trim()).join('\n');
+	pre = rows.map(row => options.trim === false ? row : row.trim()).join('\n');
 
-	for (const item of Array.from(pre).entries()) {
-		const i = item[0];
-		const char = item[1];
+	for (const [index, character] of [...pre].entries()) {
+		ret += character;
 
-		ret += char;
-
-		if (ESCAPES.has(char)) {
-			const code = parseFloat(/\d[^m]*/.exec(pre.slice(i, i + 4)));
+		if (ESCAPES.has(character)) {
+			const code = parseFloat(/\d[^m]*/.exec(pre.slice(index, index + 4)));
 			escapeCode = code === END_CODE ? null : code;
 		}
 
 		const code = ansiStyles.codes.get(Number(escapeCode));
 
 		if (escapeCode && code) {
-			if (pre[i + 1] === '\n') {
+			if (pre[index + 1] === '\n') {
 				ret += wrapAnsi(code);
-			} else if (char === '\n') {
+			} else if (character === '\n') {
 				ret += wrapAnsi(escapeCode);
 			}
 		}
@@ -157,10 +146,10 @@ const exec = (str, cols, opts) => {
 };
 
 // For each newline, invoke the method separately
-module.exports = (str, cols, opts) => {
-	return String(str)
+module.exports = (string, columns, options) => {
+	return String(string)
 		.normalize()
 		.split('\n')
-		.map(line => exec(line, cols, opts))
+		.map(line => exec(line, columns, options))
 		.join('\n');
 };
