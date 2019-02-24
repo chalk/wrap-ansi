@@ -60,6 +60,22 @@ const wrapWord = (rows, word, columns) => {
 	}
 };
 
+// Check if a given string is an opening/closing escape for background colors
+const backgroundColors = Object.keys(ansiStyles.bgColor);
+const isBackgroundEscape = string => {
+	string = string.toLowerCase();
+
+	for (const color of backgroundColors) {
+		const escapes = ansiStyles.bgColor[color];
+
+		if (string.startsWith(escapes.open) || string.startsWith(escapes.close)) {
+			return true;
+		}
+	}
+
+	return false;
+};
+
 // The wrap-ansi module can be invoked
 // in either 'hard' or 'soft' wrap mode
 //
@@ -79,11 +95,38 @@ const exec = (string, columns, options = {}) => {
 	const lengths = wordLengths(string);
 	const rows = [''];
 
-	for (const [index, word] of string.split(' ').entries()) {
+	// Strings with spaces wrapped into escapes like chalk.bgRed(' test ')
+	// get split up into 3 words, because of .split(' '), which results in incorrect rendering of that string.
+	// To prevent that, we need to normalize result of .split() and join these 3 words into one
+	const stringParts = string.split(' ');
+	const normalizedStringParts = [];
+
+	let isInsideEscape = false;
+	for (const word of stringParts) {
+		if (isBackgroundEscape(word)) {
+			if (normalizedStringParts.length === 0) {
+				normalizedStringParts.push('');
+			}
+
+			if (!isInsideEscape) {
+				isInsideEscape = true;
+				normalizedStringParts[normalizedStringParts.length - 1] += word + ' ';
+			} else if (isInsideEscape) {
+				isInsideEscape = false;
+				normalizedStringParts[normalizedStringParts.length - 1] += ' ' + word;
+			}
+		} else if (isInsideEscape) {
+			normalizedStringParts[normalizedStringParts.length - 1] += word;
+		} else {
+			normalizedStringParts.push(word);
+		}
+	}
+
+	for (const [index, word] of normalizedStringParts.entries()) {
 		rows[rows.length - 1] = options.trim === false ? rows[rows.length - 1] : rows[rows.length - 1].trim();
 		let rowLength = stringWidth(rows[rows.length - 1]);
 
-		if (rowLength || word === '') {
+		if ((rowLength || word === '')) {
 			if (rowLength === columns && options.wordWrap === false) {
 				// If we start with a new word but the current row length equals the length of the columns, add a new row
 				rows.push('');

@@ -48,6 +48,21 @@ test('does not prepend newline if first string is greater than "cols"', t => {
 	t.is(res.split('\n').length, 1);
 });
 
+test('does not trim beginning of string if it starts with a space and wrapped into background color escape', t => {
+	const res = m(chalk.bgGreen(' hello '), 10, {hard: true, trim: false});
+	t.is(res, chalk.bgGreen(' hello '));
+});
+
+test('trim beginning of string if it starts with a space and not wrapped into background color escape', t => {
+	const res = m(chalk.green(' hello '), 10, {hard: true, trim: false});
+	t.is(res, chalk.green('hello '));
+});
+
+test('handles nested color escapes', t => {
+	const res = m(chalk.bgGreen(' hello ' + chalk.red('world')), 10, {hard: true, trim: false});
+	t.is(res, chalk.bgGreen(' hello ' + chalk.red('world')));
+});
+
 // When "hard" is true
 
 test('breaks strings longer than "cols" characters', t => {
