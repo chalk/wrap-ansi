@@ -80,7 +80,9 @@ const exec = (string, columns, options = {}) => {
 	const rows = [''];
 
 	for (const [index, word] of string.split(' ').entries()) {
-		rows[rows.length - 1] = options.trim === false ? rows[rows.length - 1] : rows[rows.length - 1].trim();
+		if (options.trim !== false) {
+			rows[rows.length - 1] = rows[rows.length - 1].trimLeft();
+		}
 		let rowLength = stringWidth(rows[rows.length - 1]);
 
 		if (index !== 0) {

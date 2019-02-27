@@ -135,3 +135,9 @@ test('#27, does not remove leading space when line starts with ansi escape and n
 	t.is(m(chalk.bgGreen(` ${chalk.black('OK')} `), 100, {trim: false}), chalk.bgGreen(` ${chalk.black('OK')} `));
 	t.is(m(chalk.bgGreen(`  ${chalk.black('OK')} `), 100, {trim: false}), chalk.bgGreen(`  ${chalk.black('OK')} `));
 });
+
+test('#24, only trims leading and trailing whitespace on actual wrapped lines', t => {
+	t.is(m('   foo   bar   ', 6), 'foo\nbar');
+	t.is(m('   foo   bar   ', 42), 'foo   bar');
+	t.is(m('   foo   bar   ', 42, {trim: false}), '   foo   bar   ');
+});
