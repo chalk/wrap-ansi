@@ -83,7 +83,7 @@ const exec = (string, columns, options = {}) => {
 		rows[rows.length - 1] = options.trim === false ? rows[rows.length - 1] : rows[rows.length - 1].trim();
 		let rowLength = stringWidth(rows[rows.length - 1]);
 
-		if (rowLength || word === '') {
+		if (index !== 0) {
 			if (rowLength === columns && options.wordWrap === false) {
 				// If we start with a new word but the current row length equals the length of the columns, add a new row
 				rows.push('');

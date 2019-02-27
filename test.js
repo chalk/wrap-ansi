@@ -113,3 +113,13 @@ test('supports unicode surrogate pairs', t => {
 	t.is(m('a\uD83C\uDE00bc', 2, {hard: true}), 'a\n\uD83C\uDE00\nbc');
 	t.is(m('a\uD83C\uDE00bc\uD83C\uDE00d\uD83C\uDE00', 2, {hard: true}), 'a\n\uD83C\uDE00\nbc\n\uD83C\uDE00\nd\n\uD83C\uDE00');
 });
+
+test('#26, does not multiplicate leading spaces with no trimming', t => {
+	t.is(m(' a ', 10, {trim: false}), ' a ');
+	t.is(m('   a ', 10, {trim: false}), '   a ');
+});
+
+test('#27, does not remove leading space when line starts with ansi escape and no trimming', t => {
+	t.is(m(chalk.bgGreen(` ${chalk.black('OK')} `), 100, {trim: false}), chalk.bgGreen(` ${chalk.black('OK')} `))
+	t.is(m(chalk.bgGreen(`  ${chalk.black('OK')} `), 100, {trim: false}), chalk.bgGreen(`  ${chalk.black('OK')} `))
+});
