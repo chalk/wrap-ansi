@@ -84,7 +84,7 @@ const exec = (string, columns, options = {}) => {
 		let rowLength = stringWidth(rows[rows.length - 1]);
 
 		if (rowLength || word === '') {
-			if (rowLength === columns && options.wordWrap === false) {
+			if (rowLength === columns && (options.wordWrap === false || options.trim === false)) {
 				// If we start with a new word but the current row length equals the length of the columns, add a new row
 				rows.push('');
 				rowLength = 0;

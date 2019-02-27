@@ -113,3 +113,10 @@ test('supports unicode surrogate pairs', t => {
 	t.is(m('a\uD83C\uDE00bc', 2, {hard: true}), 'a\n\uD83C\uDE00\nbc');
 	t.is(m('a\uD83C\uDE00bc\uD83C\uDE00d\uD83C\uDE00', 2, {hard: true}), 'a\n\uD83C\uDE00\nbc\n\uD83C\uDE00\nd\n\uD83C\uDE00');
 });
+
+test('#25, whitespace at the end of line is treated properly with no trimming', t => {
+	t.is(m('foo bar', 3), 'foo\nbar');
+	t.is(m('foo bar', 3, {hard: true}), 'foo\nbar');
+	t.is(m('foo bar', 3, {trim: false}), 'foo\n \nbar');
+	t.is(m('foo bar', 3, {trim: false, hard: true}), 'foo\n \nbar');
+});
