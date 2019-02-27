@@ -115,9 +115,8 @@ test('supports unicode surrogate pairs', t => {
 });
 
 test('#23, whitespaces is properly wrapped', t => {
-  // console.log(JSON.stringify(m('   ', 2, {trim: false})))
-  t.is(m('   ', 2, {trim: false}), '  \n ');
-  t.is(m('   ', 2, {trim: false, hard: true}), '  \n ');
+	t.is(m('   ', 2, {trim: false}), '  \n ');
+	t.is(m('   ', 2, {trim: false, hard: true}), '  \n ');
 });
 
 test('#25, whitespace at the end of line is treated properly with no trimming', t => {

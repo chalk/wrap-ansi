@@ -68,7 +68,7 @@ const wrapWord = (rows, word, columns) => {
 //
 // 'soft' allows long words to expand past the column length
 const exec = (string, columns, options = {}) => {
-	if (options.trim !== false && string.trim() === ''){
+	if (options.trim !== false && string.trim() === '') {
 		return '';
 	}
 
