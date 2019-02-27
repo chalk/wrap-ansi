@@ -68,8 +68,8 @@ const wrapWord = (rows, word, columns) => {
 //
 // 'soft' allows long words to expand past the column length
 const exec = (string, columns, options = {}) => {
-	if (string.trim() === '') {
-		return options.trim === false ? string : string.trim();
+	if (options.trim !== false && string.trim() === ''){
+		return '';
 	}
 
 	let pre = '';
@@ -84,7 +84,7 @@ const exec = (string, columns, options = {}) => {
 		let rowLength = stringWidth(rows[rows.length - 1]);
 
 		if (index !== 0) {
-			if (rowLength === columns && options.wordWrap === false) {
+			if (rowLength === columns && (options.wordWrap === false || options.trim === false)) {
 				// If we start with a new word but the current row length equals the length of the columns, add a new row
 				rows.push('');
 				rowLength = 0;
