@@ -86,30 +86,30 @@ const exec = (string, columns, options = {}) => {
 	let normalizedStringParts = [];
 
 	// Look for all background color ansi escapes
-	const bgColorEscape = /(\u001b\[(4[0-7]|10[0-7])m.*?\u001b\[49m)/g
-	let match
-	let lastMatch
+	const bgColorEscape = /(\u001b\[(4[0-7]|10[0-7])m.*?\u001b\[49m)/g; // eslint-disable-line no-control-regex
+	let match;
+	let lastMatch;
 
 	while ((match = bgColorEscape.exec(string)) !== null) {
 		if (normalizedStringParts.length === 0) {
 			// Add string part before first background color escape
-			normalizedStringParts.push(...string.slice(0, match.index).split(' ').slice(0, -1))
+			normalizedStringParts.push(...string.slice(0, match.index).split(' ').slice(0, -1));
 		}
 
-		normalizedStringParts.push(match[0])
-		lastMatch = match
+		normalizedStringParts.push(match[0]);
+		lastMatch = match;
 	}
 
 	if (lastMatch) {
 		// Add remaining string after last background color escape
-		const remainingString = string.slice(lastMatch.index + lastMatch[0].length)
+		const remainingString = string.slice(lastMatch.index + lastMatch[0].length);
 
 		if (remainingString.length > 0) {
-			normalizedStringParts.push(...remainingString.split(' ').slice(0, -1))
+			normalizedStringParts.push(...remainingString.split(' ').slice(0, -1));
 		}
 	} else {
 		// If there is no match, it means there are no background color escapes
-		normalizedStringParts = stringParts
+		normalizedStringParts = stringParts;
 	}
 
 	for (const [index, word] of normalizedStringParts.entries()) {
