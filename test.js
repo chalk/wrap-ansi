@@ -119,6 +119,12 @@ test('#23, properly wraps whitespace with no trimming', t => {
 	t.is(m('   ', 2, {trim: false, hard: true}), '  \n ');
 });
 
+test('#24, trims leading and trailing whitespace only on actual wrapped lines and only with trimming', t => {
+	t.is(m('   foo   bar   ', 6), 'foo\nbar');
+	t.is(m('   foo   bar   ', 42), 'foo   bar');
+	t.is(m('   foo   bar   ', 42, {trim: false}), '   foo   bar   ');
+});
+
 test('#25, properly wraps whitespace between words with no trimming', t => {
 	t.is(m('foo bar', 3), 'foo\nbar');
 	t.is(m('foo bar', 3, {hard: true}), 'foo\nbar');
@@ -131,13 +137,9 @@ test('#26, does not multiplicate leading spaces with no trimming', t => {
 	t.is(m('   a ', 10, {trim: false}), '   a ');
 });
 
-test('#27, does not remove leading spaces when line starts with ansi escape when no trimming', t => {
+test('#27, does not remove spaces in line with ansi escapes when no trimming', t => {
 	t.is(m(chalk.bgGreen(` ${chalk.black('OK')} `), 100, {trim: false}), chalk.bgGreen(` ${chalk.black('OK')} `));
 	t.is(m(chalk.bgGreen(`  ${chalk.black('OK')} `), 100, {trim: false}), chalk.bgGreen(`  ${chalk.black('OK')} `));
+	t.is(m(chalk.bgGreen(' hello '), 10, {hard: true, trim: false}), chalk.bgGreen(' hello '))
 });
 
-test('#24, trims leading and trailing whitespace only on actual wrapped lines and only with trimming', t => {
-	t.is(m('   foo   bar   ', 6), 'foo\nbar');
-	t.is(m('   foo   bar   ', 42), 'foo   bar');
-	t.is(m('   foo   bar   ', 42, {trim: false}), '   foo   bar   ');
-});
