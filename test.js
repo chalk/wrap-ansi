@@ -63,6 +63,11 @@ test('handles nested color escapes', t => {
 	t.is(res, chalk.bgGreen(' hello ' + chalk.red('world')));
 });
 
+test('handle ending space within a color escape', t => {
+	const res = m(chalk.bgGreen(' hello ' + chalk.red('world') + ' '), 10, {hard: true, trim: false});
+	t.is(res, chalk.bgGreen(' hello ' + chalk.red('world') + ' '));
+})
+
 // When "hard" is true
 
 test('breaks strings longer than "cols" characters', t => {

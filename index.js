@@ -60,22 +60,6 @@ const wrapWord = (rows, word, columns) => {
 	}
 };
 
-// Check if a given string is an opening/closing escape for background colors
-const backgroundColors = Object.keys(ansiStyles.bgColor);
-const isBackgroundEscape = string => {
-	string = string.toLowerCase();
-
-	for (const color of backgroundColors) {
-		const escapes = ansiStyles.bgColor[color];
-
-		if (string.startsWith(escapes.open) || string.startsWith(escapes.close)) {
-			return true;
-		}
-	}
-
-	return false;
-};
-
 // The wrap-ansi module can be invoked
 // in either 'hard' or 'soft' wrap mode
 //
@@ -97,29 +81,35 @@ const exec = (string, columns, options = {}) => {
 
 	// Strings with spaces wrapped into escapes like chalk.bgRed(' test ')
 	// get split up into 3 words, because of .split(' '), which results in incorrect rendering of that string.
-	// To prevent that, we need to normalize result of .split() and join these 3 words into one
+	// To prevent that, we need to normalize result of .split() and avoid splitting strings wrapped into ansi escapes
 	const stringParts = string.split(' ');
-	const normalizedStringParts = [];
+	let normalizedStringParts = [];
 
-	let isInsideEscape = false;
-	for (const word of stringParts) {
-		if (isBackgroundEscape(word)) {
-			if (normalizedStringParts.length === 0) {
-				normalizedStringParts.push('');
-			}
+	// Look for all background color ansi escapes
+	const bgColorEscape = /(\u001b\[(4[0-7]|10[0-7])m.*?\u001b\[49m)/g
+	let match
+	let lastMatch
 
-			if (!isInsideEscape) {
-				isInsideEscape = true;
-				normalizedStringParts[normalizedStringParts.length - 1] += word + ' ';
-			} else if (isInsideEscape) {
-				isInsideEscape = false;
-				normalizedStringParts[normalizedStringParts.length - 1] += ' ' + word;
-			}
-		} else if (isInsideEscape) {
-			normalizedStringParts[normalizedStringParts.length - 1] += word;
-		} else {
-			normalizedStringParts.push(word);
+	while ((match = bgColorEscape.exec(string)) !== null) {
+		if (normalizedStringParts.length === 0) {
+			// Add string part before first background color escape
+			normalizedStringParts.push(...string.slice(0, match.index).split(' ').slice(0, -1))
 		}
+
+		normalizedStringParts.push(match[0])
+		lastMatch = match
+	}
+
+	if (lastMatch) {
+		// Add remaining string after last background color escape
+		const remainingString = string.slice(lastMatch.index + lastMatch[0].length)
+
+		if (remainingString.length > 0) {
+			normalizedStringParts.push(...remainingString.split(' ').slice(0, -1))
+		}
+	} else {
+		// If there is no match, it means there are no background color escapes
+		normalizedStringParts = stringParts
 	}
 
 	for (const [index, word] of normalizedStringParts.entries()) {
