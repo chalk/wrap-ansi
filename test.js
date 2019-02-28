@@ -140,6 +140,5 @@ test('#26, does not multiplicate leading spaces with no trimming', t => {
 test('#27, does not remove spaces in line with ansi escapes when no trimming', t => {
 	t.is(m(chalk.bgGreen(` ${chalk.black('OK')} `), 100, {trim: false}), chalk.bgGreen(` ${chalk.black('OK')} `));
 	t.is(m(chalk.bgGreen(`  ${chalk.black('OK')} `), 100, {trim: false}), chalk.bgGreen(`  ${chalk.black('OK')} `));
-	t.is(m(chalk.bgGreen(' hello '), 10, {hard: true, trim: false}), chalk.bgGreen(' hello '))
+	t.is(m(chalk.bgGreen(' hello '), 10, {hard: true, trim: false}), chalk.bgGreen(' hello '));
 });
-
