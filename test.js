@@ -53,7 +53,7 @@ test('does not prepend newline if first string is greater than "cols"', t => {
 test('breaks strings longer than "cols" characters', t => {
 	const res5 = m(fixture, 5, {hard: true});
 
-	t.is(res5, 'The\nquick\nbrown\n\u001B[31mfox\u001B[39m\n\u001B[31mjumpe\u001B[39m\n\u001B[31md\u001B[39m\n\u001B[31mover\u001B[39m\n\u001B[31m\u001B[39mthe\nlazy\n\u001B[32mdog\u001B[39m\n\u001B[32mand\u001B[39m\n\u001B[32mthen\u001B[39m\n\u001B[32mran\u001B[39m\n\u001B[32maway\u001B[39m\n\u001B[32mwith\u001B[39m\n\u001B[32mthe\u001B[39m\n\u001B[32munico\u001B[39m\n\u001B[32mrn.\u001B[39m');
+	t.is(res5, 'The\nquick\nbrown\n\u001B[31mfox j\u001B[39m\n\u001B[31mumped\u001B[39m\n\u001B[31mover\u001B[39m\n\u001B[31m\u001B[39mthe\nlazy\n\u001B[32mdog\u001B[39m\n\u001B[32mand\u001B[39m\n\u001B[32mthen\u001B[39m\n\u001B[32mran\u001B[39m\n\u001B[32maway\u001B[39m\n\u001B[32mwith\u001B[39m\n\u001B[32mthe\u001B[39m\n\u001B[32munico\u001B[39m\n\u001B[32mrn.\u001B[39m');
 	t.true(stripAnsi(res5).split('\n').every(x => x.length <= 5));
 });
 
