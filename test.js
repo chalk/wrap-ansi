@@ -53,7 +53,7 @@ test('does not prepend newline if first string is greater than "cols"', t => {
 test('breaks strings longer than "cols" characters', t => {
 	const res5 = m(fixture, 5, {hard: true});
 
-	t.is(res5, 'The\nquick\nbrown\n\u001B[31mfox\u001B[39m\n\u001B[31mjumpe\u001B[39m\n\u001B[31md\u001B[39m\n\u001B[31mover\u001B[39m\n\u001B[31m\u001B[39mthe\nlazy\n\u001B[32mdog\u001B[39m\n\u001B[32mand\u001B[39m\n\u001B[32mthen\u001B[39m\n\u001B[32mran\u001B[39m\n\u001B[32maway\u001B[39m\n\u001B[32mwith\u001B[39m\n\u001B[32mthe\u001B[39m\n\u001B[32munico\u001B[39m\n\u001B[32mrn.\u001B[39m');
+	t.is(res5, 'The\nquick\nbrown\n\u001B[31mfox j\u001B[39m\n\u001B[31mumped\u001B[39m\n\u001B[31mover\u001B[39m\n\u001B[31m\u001B[39mthe\nlazy\n\u001B[32mdog\u001B[39m\n\u001B[32mand\u001B[39m\n\u001B[32mthen\u001B[39m\n\u001B[32mran\u001B[39m\n\u001B[32maway\u001B[39m\n\u001B[32mwith\u001B[39m\n\u001B[32mthe\u001B[39m\n\u001B[32munico\u001B[39m\n\u001B[32mrn.\u001B[39m');
 	t.true(stripAnsi(res5).split('\n').every(x => x.length <= 5));
 });
 
@@ -112,4 +112,33 @@ test('supports fullwidth characters', t => {
 test('supports unicode surrogate pairs', t => {
 	t.is(m('a\uD83C\uDE00bc', 2, {hard: true}), 'a\n\uD83C\uDE00\nbc');
 	t.is(m('a\uD83C\uDE00bc\uD83C\uDE00d\uD83C\uDE00', 2, {hard: true}), 'a\n\uD83C\uDE00\nbc\n\uD83C\uDE00\nd\n\uD83C\uDE00');
+});
+
+test('#23, properly wraps whitespace with no trimming', t => {
+	t.is(m('   ', 2, {trim: false}), '  \n ');
+	t.is(m('   ', 2, {trim: false, hard: true}), '  \n ');
+});
+
+test('#24, trims leading and trailing whitespace only on actual wrapped lines and only with trimming', t => {
+	t.is(m('   foo   bar   ', 6), 'foo\nbar');
+	t.is(m('   foo   bar   ', 42), 'foo   bar');
+	t.is(m('   foo   bar   ', 42, {trim: false}), '   foo   bar   ');
+});
+
+test('#25, properly wraps whitespace between words with no trimming', t => {
+	t.is(m('foo bar', 3), 'foo\nbar');
+	t.is(m('foo bar', 3, {hard: true}), 'foo\nbar');
+	t.is(m('foo bar', 3, {trim: false}), 'foo\n \nbar');
+	t.is(m('foo bar', 3, {trim: false, hard: true}), 'foo\n \nbar');
+});
+
+test('#26, does not multiplicate leading spaces with no trimming', t => {
+	t.is(m(' a ', 10, {trim: false}), ' a ');
+	t.is(m('   a ', 10, {trim: false}), '   a ');
+});
+
+test('#27, does not remove spaces in line with ansi escapes when no trimming', t => {
+	t.is(m(chalk.bgGreen(` ${chalk.black('OK')} `), 100, {trim: false}), chalk.bgGreen(` ${chalk.black('OK')} `));
+	t.is(m(chalk.bgGreen(`  ${chalk.black('OK')} `), 100, {trim: false}), chalk.bgGreen(`  ${chalk.black('OK')} `));
+	t.is(m(chalk.bgGreen(' hello '), 10, {hard: true, trim: false}), chalk.bgGreen(' hello '));
 });
