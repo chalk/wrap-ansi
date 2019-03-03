@@ -83,6 +83,7 @@ const exec = (string, columns, options = {}) => {
 		if (options.trim !== false) {
 			rows[rows.length - 1] = rows[rows.length - 1].trimLeft();
 		}
+
 		let rowLength = stringWidth(rows[rows.length - 1]);
 
 		if (index !== 0) {
@@ -105,6 +106,7 @@ const exec = (string, columns, options = {}) => {
 			if (breaksStartingNextLine < breaksStartingThisLine) {
 				rows.push('');
 			}
+
 			wrapWord(rows, word, columns);
 			continue;
 		}
