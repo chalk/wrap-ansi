@@ -121,6 +121,9 @@ test('#24, trims leading and trailing whitespace only on actual wrapped lines an
 	t.is(wrapAnsi('   foo   bar   ', 6), 'foo\nbar');
 	t.is(wrapAnsi('   foo   bar   ', 42), 'foo   bar');
 	t.is(wrapAnsi('   foo   bar   ', 42, {trim: false}), '   foo   bar   ');
+	t.is(wrapAnsi(chalk.blue('   foo   bar   '), 42, {trim: false}), chalk.blue('   foo   bar   '));
+	t.is(wrapAnsi(chalk.blue('   foo   bar   '), 6), chalk.blue('foo\nbar'));
+	t.is(wrapAnsi(chalk.blue('   foo   bar   '), 42), chalk.blue('foo   bar'));
 });
 
 test.failing('#24, trims leading and trailing whitespace inside a color block only on actual wrapped lines and only with trimming', t => {
