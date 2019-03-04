@@ -69,14 +69,18 @@ const stringVisibleTrimSpaces = str => {
 		if (stringWidth(words[first]) > 0) {
 			break;
 		}
+
 		first++;
 	}
+
 	while (last > first) {
 		if (stringWidth(words[last - 1]) > 0) {
 			break;
 		}
+
 		last--;
 	}
+
 	return words.slice(0, first).join('') + words.slice(first, last).join(' ') + words.slice(last, words.length).join('');
 };
 
@@ -151,6 +155,7 @@ const exec = (string, columns, options = {}) => {
 	if (options.trim !== false) {
 		rows = rows.map(stringVisibleTrimSpaces);
 	}
+
 	pre = rows.join('\n');
 
 	for (const [index, character] of [...pre].entries()) {
