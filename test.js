@@ -118,6 +118,7 @@ test('#23, properly wraps whitespace with no trimming', t => {
 });
 
 test('#24, trims leading and trailing whitespace only on actual wrapped lines and only with trimming', t => {
+	t.is(wrapAnsi('   foo   bar   ', 3), 'foo\nbar');
 	t.is(wrapAnsi('   foo   bar   ', 6), 'foo\nbar');
 	t.is(wrapAnsi('   foo   bar   ', 42), 'foo   bar');
 	t.is(wrapAnsi('   foo   bar   ', 42, {trim: false}), '   foo   bar   ');

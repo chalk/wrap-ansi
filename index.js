@@ -111,14 +111,16 @@ const exec = (string, columns, options = {}) => {
 		let rowLength = stringWidth(rows[rows.length - 1]);
 
 		if (index !== 0) {
-			if (rowLength === columns && (options.wordWrap === false || options.trim === false)) {
+			if (rowLength >= columns && (options.wordWrap === false || options.trim === false)) {
 				// If we start with a new word but the current row length equals the length of the columns, add a new row
 				rows.push('');
 				rowLength = 0;
 			}
 
-			rows[rows.length - 1] += ' ';
-			rowLength++;
+			if (rowLength > 0 || options.trim === false) {
+				rows[rows.length - 1] += ' ';
+				rowLength++;
+			}
 		}
 
 		// In 'hard' wrap mode, the length of a line is
@@ -135,7 +137,7 @@ const exec = (string, columns, options = {}) => {
 			continue;
 		}
 
-		if (rowLength + lengths[index] > columns && rowLength > 0) {
+		if (rowLength + lengths[index] > columns && rowLength > 0 && lengths[index] > 0) {
 			if (options.wordWrap === false && rowLength < columns) {
 				wrapWord(rows, word, columns);
 				continue;
