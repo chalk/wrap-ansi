@@ -61,17 +61,10 @@ const wrapWord = (rows, word, columns) => {
 };
 
 // Trims spaces from a string ignoring invisible sequences
-const stringVisibleTrimSpaces = str => {
+const stringVisibleTrimSpacesRight = str => {
 	const words = str.split(' ');
-	let first = 0;
+	const first = 0;
 	let last = words.length;
-	while (first < last) {
-		if (stringWidth(words[first]) > 0) {
-			break;
-		}
-
-		first++;
-	}
 
 	while (last > first) {
 		if (stringWidth(words[last - 1]) > 0) {
@@ -155,7 +148,7 @@ const exec = (string, columns, options = {}) => {
 	}
 
 	if (options.trim !== false) {
-		rows = rows.map(stringVisibleTrimSpaces);
+		rows = rows.map(stringVisibleTrimSpacesRight);
 	}
 
 	pre = rows.join('\n');
