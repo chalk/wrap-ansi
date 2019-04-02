@@ -60,6 +60,26 @@ const wrapWord = (rows, word, columns) => {
 	}
 };
 
+// Trims spaces from a string ignoring invisible sequences
+const stringVisibleTrimSpacesRight = str => {
+	const words = str.split(' ');
+	let last = words.length;
+
+	while (last > 0) {
+		if (stringWidth(words[last - 1]) > 0) {
+			break;
+		}
+
+		last--;
+	}
+
+	if (last === words.length) {
+		return str;
+	}
+
+	return words.slice(0, last).join(' ') + words.slice(last).join('');
+};
+
 // The wrap-ansi module can be invoked
 // in either 'hard' or 'soft' wrap mode
 //
@@ -77,7 +97,7 @@ const exec = (string, columns, options = {}) => {
 	let escapeCode;
 
 	const lengths = wordLengths(string);
-	const rows = [''];
+	let rows = [''];
 
 	for (const [index, word] of string.split(' ').entries()) {
 		if (options.trim !== false) {
@@ -87,14 +107,16 @@ const exec = (string, columns, options = {}) => {
 		let rowLength = stringWidth(rows[rows.length - 1]);
 
 		if (index !== 0) {
-			if (rowLength === columns && (options.wordWrap === false || options.trim === false)) {
+			if (rowLength >= columns && (options.wordWrap === false || options.trim === false)) {
 				// If we start with a new word but the current row length equals the length of the columns, add a new row
 				rows.push('');
 				rowLength = 0;
 			}
 
-			rows[rows.length - 1] += ' ';
-			rowLength++;
+			if (rowLength > 0 || options.trim === false) {
+				rows[rows.length - 1] += ' ';
+				rowLength++;
+			}
 		}
 
 		// In 'hard' wrap mode, the length of a line is
@@ -111,7 +133,7 @@ const exec = (string, columns, options = {}) => {
 			continue;
 		}
 
-		if (rowLength + lengths[index] > columns && rowLength > 0) {
+		if (rowLength + lengths[index] > columns && rowLength > 0 && lengths[index] > 0) {
 			if (options.wordWrap === false && rowLength < columns) {
 				wrapWord(rows, word, columns);
 				continue;
@@ -128,7 +150,11 @@ const exec = (string, columns, options = {}) => {
 		rows[rows.length - 1] += word;
 	}
 
-	pre = rows.map(row => options.trim === false ? row : row.trim()).join('\n');
+	if (options.trim !== false) {
+		rows = rows.map(stringVisibleTrimSpacesRight);
+	}
+
+	pre = rows.join('\n');
 
 	for (const [index, character] of [...pre].entries()) {
 		ret += character;
