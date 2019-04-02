@@ -63,10 +63,9 @@ const wrapWord = (rows, word, columns) => {
 // Trims spaces from a string ignoring invisible sequences
 const stringVisibleTrimSpacesRight = str => {
 	const words = str.split(' ');
-	const first = 0;
 	let last = words.length;
 
-	while (last > first) {
+	while (last > 0) {
 		if (stringWidth(words[last - 1]) > 0) {
 			break;
 		}
@@ -74,7 +73,11 @@ const stringVisibleTrimSpacesRight = str => {
 		last--;
 	}
 
-	return words.slice(0, first).join('') + words.slice(first, last).join(' ') + words.slice(last, words.length).join('');
+	if (last === words.length) {
+		return str;
+	}
+
+	return words.slice(0, last).join(' ') + words.slice(last).join('');
 };
 
 // The wrap-ansi module can be invoked
