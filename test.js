@@ -5,6 +5,7 @@ import stripAnsi from 'strip-ansi';
 import wrapAnsi from '.';
 
 chalk.enabled = true;
+chalk.level = 1;
 
 // When "hard" is false
 
