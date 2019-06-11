@@ -27,11 +27,11 @@ console.log(wrapAnsi(input, 20));
 
 ## API
 
-### wrapAnsi(input, columns, options?)
+### wrapAnsi(string, columns, options?)
 
 Wrap words to the specified column width.
 
-#### input
+#### string
 
 Type: `string`
 
@@ -45,7 +45,7 @@ Number of columns to wrap the text to.
 
 #### options
 
-Type: `Object`
+Type: `object`
 
 ##### hard
 
