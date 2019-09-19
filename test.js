@@ -2,6 +2,7 @@ import test from 'ava';
 import chalk from 'chalk';
 import hasAnsi from 'has-ansi';
 import stripAnsi from 'strip-ansi';
+import terminalLink from 'terminal-link';
 import wrapAnsi from '.';
 
 chalk.enabled = true;
@@ -147,4 +148,12 @@ test('#27, does not remove spaces in line with ansi escapes when no trimming', t
 	t.is(wrapAnsi(chalk.bgGreen(` ${chalk.black('OK')} `), 100, {trim: false}), chalk.bgGreen(` ${chalk.black('OK')} `));
 	t.is(wrapAnsi(chalk.bgGreen(`  ${chalk.black('OK')} `), 100, {trim: false}), chalk.bgGreen(`  ${chalk.black('OK')} `));
 	t.is(wrapAnsi(chalk.bgGreen(' hello '), 10, {hard: true, trim: false}), chalk.bgGreen(' hello '));
+});
+
+test('#35, wraps hyperlinks, preserving clickability in supporting terminals', t => {
+	const link = 'https://testlogin:testpassword@areallylongurlthatneedstogetwrapped.com/with_some/path?andparams=bogus&more=evenmorebogus#evensomehashparams=notdoinganything';
+	const expected = terminalLink.isSupported	?
+		'\u001B]8;;https://testlogin:testpassword@areallylongurlthatneedstogetwrapped.com/with_some/path?andparams=bogus&more=evenmorebogus#evensomehashparams=notdoinganything\u0007https://testlogi\u001B]8;;\u0007\u001B[28m\n\u001B[8m\u001B]8;;https://testlogin:testpassword@areallylongurlthatneedstogetwrapped.com/with_some/path?andparams=bogus&more=evenmorebogus#evensomehashparams=notdoinganything\u0007n:testpassword@a\u001B]8;;\u0007\u001B[28m\n\u001B[8m\u001B]8;;https://testlogin:testpassword@areallylongurlthatneedstogetwrapped.com/with_some/path?andparams=bogus&more=evenmorebogus#evensomehashparams=notdoinganything\u0007reallylongurltha\u001B]8;;\u0007\u001B[28m\n\u001B[8m\u001B]8;;https://testlogin:testpassword@areallylongurlthatneedstogetwrapped.com/with_some/path?andparams=bogus&more=evenmorebogus#evensomehashparams=notdoinganything\u0007tneedstogetwrapp\u001B]8;;\u0007\u001B[28m\n\u001B[8m\u001B]8;;https://testlogin:testpassword@areallylongurlthatneedstogetwrapped.com/with_some/path?andparams=bogus&more=evenmorebogus#evensomehashparams=notdoinganything\u0007ed.com/with_some\u001B]8;;\u0007\u001B[28m\n\u001B[8m\u001B]8;;https://testlogin:testpassword@areallylongurlthatneedstogetwrapped.com/with_some/path?andparams=bogus&more=evenmorebogus#evensomehashparams=notdoinganything\u0007/path?andparams=\u001B]8;;\u0007\u001B[28m\n\u001B[8m\u001B]8;;https://testlogin:testpassword@areallylongurlthatneedstogetwrapped.com/with_some/path?andparams=bogus&more=evenmorebogus#evensomehashparams=notdoinganything\u0007bogus&more=evenm\u001B]8;;\u0007\u001B[28m\n\u001B[8m\u001B]8;;https://testlogin:testpassword@areallylongurlthatneedstogetwrapped.com/with_some/path?andparams=bogus&more=evenmorebogus#evensomehashparams=notdoinganything\u0007orebogus#evensom\u001B]8;;\u0007\u001B[28m\n\u001B[8m\u001B]8;;https://testlogin:testpassword@areallylongurlthatneedstogetwrapped.com/with_some/path?andparams=bogus&more=evenmorebogus#evensomehashparams=notdoinganything\u0007ehashparams=notd\u001B]8;;\u0007\u001B[28m\n\u001B[8m\u001B]8;;https://testlogin:testpassword@areallylongurlthatneedstogetwrapped.com/with_some/path?andparams=bogus&more=evenmorebogus#evensomehashparams=notdoinganything\u0007oinganything\u001B]8;;\u0007' :
+		'https://testlogi\nn:testpassword@a\nreallylongurltha\ntneedstogetwrapp\ned.com/with_some\n/path?andparams=\nbogus&more=evenm\norebogus#evensom\nehashparams=notd\noinganything';
+	t.is(wrapAnsi(`hi http://js.io\n${link}`, 16, {hard: true}), `hi http://js.io\n${expected}`);
 });

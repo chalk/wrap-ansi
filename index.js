@@ -1,7 +1,9 @@
 'use strict';
+const ansiStyles = require('ansi-styles');
+const escapeStringRegexp = require('escape-string-regexp');
 const stringWidth = require('string-width');
 const stripAnsi = require('strip-ansi');
-const ansiStyles = require('ansi-styles');
+const terminalLink = require('terminal-link');
 
 const ESCAPES = new Set([
 	'\u001B',
@@ -16,13 +18,29 @@ const wrapAnsi = code => `${ESCAPES.values().next().value}[${code}m`;
 // the extra characters added by ansi escape codes
 const wordLengths = string => string.split(' ').map(character => stringWidth(character));
 
+// Determine if a string is a valid URL
+const isUrl = string => {
+	try {
+		return new URL(string) && true;
+	} catch (_) {
+		return false;
+	}
+};
+
+/* istanbul ignore next: not easily mockable as it depends on terminal environment */
+const terminalLinkFallback = text => text;
+
 // Wrap a long word across multiple rows
 // Ansi escape codes do not count towards length
 const wrapWord = (rows, word, columns) => {
+	const isWordUrl = isUrl(word);
 	const characters = [...word];
 
 	let isInsideEscape = false;
 	let visible = stringWidth(stripAnsi(rows[rows.length - 1]));
+
+	const startRow = rows.length - 1;
+	const startColumn = rows[startRow].length;
 
 	for (const [index, character] of characters.entries()) {
 		const characterLength = stringWidth(character);
@@ -57,6 +75,16 @@ const wrapWord = (rows, word, columns) => {
 	// ansi escape characters, handle this edge-case
 	if (!visible && rows[rows.length - 1].length > 0 && rows.length > 1) {
 		rows[rows.length - 2] += rows.pop();
+	}
+
+	// Check if we need to hyperlinkify the word we just wrapped
+	if (isWordUrl) {
+		for (const [index, row] of rows.slice(startRow).entries()) {
+			const urlPortion = index === 0 ? row.substring(startColumn) : row;
+			rows[startRow + index] = rows[startRow + index].replace(new RegExp(`${escapeStringRegexp(urlPortion)}$`),
+				terminalLink(urlPortion, word, {fallback: terminalLinkFallback})
+			);
+		}
 	}
 };
 
