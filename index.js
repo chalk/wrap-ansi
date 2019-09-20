@@ -40,10 +40,7 @@ const wrapWord = (rows, word, columns) => {
 
 		if (ESCAPES.has(character)) {
 			isInsideEscape = true;
-			/* istanbul ignore if: cannot enter on terminals not supporting hyperlinks */
-			if (word.slice(index).startsWith(`${character}${ANSI_ESCAPE_LINK}`)) {
-				isInsideLinkEscape = true;
-			}
+			isInsideLinkEscape = word.slice(index).startsWith(`${character}${ANSI_ESCAPE_LINK}`);
 		}
 
 		if (isInsideEscape) {
