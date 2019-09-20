@@ -151,9 +151,19 @@ test('#27, does not remove spaces in line with ansi escapes when no trimming', t
 });
 
 test('#35, wraps hyperlinks, preserving clickability in supporting terminals', t => {
-	const string = 'hi http://js.io https://testlogin:testpassword@areallylongurlthatneedstogetwrapped.com/with_some/path?andparams=bogus&more=evenmorebogus#evensomehashparams=notdoinganything';
+	const link = 'https://testlogin:testpassword@areallylongurlthatneedstogetwrapped.com/with_some/path?andparams=bogus&more=evenmorebogus#evensomehashparams=notdoinganything';
+	const input = `hi http://js.io ${terminalLink(link, link, {fallback: text => text})}`;
 	const expected = terminalLink.isSupported	?
-		'hi \u001B]8;;http://js.io\u0007http://js.io\u001B]8;;\u0007\u001B[28m\n\u001B[8m\u001B]8;;https://testlogin:testpassword@areallylongurlthatneedstogetwrapped.com/with_some/path?andparams=bogus&more=evenmorebogus#evensomehashparams=notdoinganything\u0007https://testlogi\u001B[28m\n\u001B[8mn:testpassword@a\u001B[28m\n\u001B[8mreallylongurltha\u001B[28m\n\u001B[8mtneedstogetwrapp\u001B[28m\n\u001B[8med.com/with_some\u001B[28m\n\u001B[8m/path?andparams=\u001B[28m\n\u001B[8mbogus&more=evenm\u001B[28m\n\u001B[8morebogus#evensom\u001B[28m\n\u001B[8mehashparams=notd\u001B[28m\n\u001B[8moinganything\u001B]8;;\u0007' :
+		'hi http://js.io\n\u001B]8;;https://testlogin:testpassword@areallylongurlthatneedstogetwrapped.com/with_some/path?andparams=bogus&more=evenmorebogus#evensomehashparams=notdoinganything\u0007https://testlogi\u001B[28m\n\u001B[8mn:testpassword@a\u001B[28m\n\u001B[8mreallylongurltha\u001B[28m\n\u001B[8mtneedstogetwrapp\u001B[28m\n\u001B[8med.com/with_some\u001B[28m\n\u001B[8m/path?andparams=\u001B[28m\n\u001B[8mbogus&more=evenm\u001B[28m\n\u001B[8morebogus#evensom\u001B[28m\n\u001B[8mehashparams=notd\u001B[28m\n\u001B[8moinganything\u001B]8;;\u0007' :
 		'hi http://js.io\nhttps://testlogi\nn:testpassword@a\nreallylongurltha\ntneedstogetwrapp\ned.com/with_some\n/path?andparams=\nbogus&more=evenm\norebogus#evensom\nehashparams=notd\noinganything';
-	t.is(wrapAnsi(string, 16, {hard: true}), expected);
+	t.is(wrapAnsi(input, 16, {hard: true}), expected);
+});
+
+test('#35, wraps coloured hyperlinks, preserving clickability in supporting terminals', t => {
+	const link = 'https://testlogin:testpassword@areallylongurlthatneedstogetwrapped.com/with_some/path?andparams=bogus&more=evenmorebogus#evensomehashparams=notdoinganything';
+	const input = `hi http://js.io ${terminalLink(chalk.bgGreen(link), link, {fallback: text => text})}`;
+	const expected = terminalLink.isSupported	?
+		`hi http://js.io\n\u001B]8;;https://testlogin:testpassword@areallylongurlthatneedstogetwrapped.com/with_some/path?andparams=bogus&more=evenmorebogus#evensomehashparams=notdoinganything\u0007${chalk.bgGreen('https://testlogi\nn:testpassword@a\nreallylongurltha\ntneedstogetwrapp\ned.com/with_some\n/path?andparams=\nbogus&more=evenm\norebogus#evensom\nehashparams=notd\noinganything')}\u001B]8;;\u0007` :
+		`hi http://js.io\n${chalk.bgGreen('https://testlogi\nn:testpassword@a\nreallylongurltha\ntneedstogetwrapp\ned.com/with_some\n/path?andparams=\nbogus&more=evenm\norebogus#evensom\nehashparams=notd\noinganything')}`;
+	t.is(wrapAnsi(input, 16, {hard: true}), expected);
 });

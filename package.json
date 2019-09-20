@@ -47,7 +47,6 @@
 	],
 	"dependencies": {
 		"ansi-styles": "^4.0.0",
-		"escape-string-regexp": "^2.0.0",
 		"string-width": "^4.1.0",
 		"strip-ansi": "^5.0.0",
 		"terminal-link": "^2.0.0"

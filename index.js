@@ -2,7 +2,6 @@
 const ansiStyles = require('ansi-styles');
 const stringWidth = require('string-width');
 const stripAnsi = require('strip-ansi');
-const terminalLink = require('terminal-link');
 
 const ESCAPES = new Set([
 	'\u001B',
@@ -17,29 +16,14 @@ const wrapAnsi = code => `${ESCAPES.values().next().value}[${code}m`;
 // the extra characters added by ansi escape codes
 const wordLengths = string => string.split(' ').map(character => stringWidth(character));
 
-// Determine if a string is a valid URL
-const isUrl = string => {
-	try {
-		return new URL(string) && true;
-	} catch (_) {
-		return false;
-	}
-};
-
-/* istanbul ignore next: not easily mockable as it depends on terminal environment */
-const terminalLinkFallback = text => text;
-
 // Wrap a long word across multiple rows
 // Ansi escape codes do not count towards length
 const wrapWord = (rows, word, columns) => {
-	const isWordUrl = isUrl(word);
 	const characters = [...word];
 
 	let isInsideEscape = false;
+	let isInsideLinkEscape = false;
 	let visible = stringWidth(stripAnsi(rows[rows.length - 1]));
-
-	const startRow = rows.length - 1;
-	const startColumn = rows[startRow].length;
 
 	for (const [index, character] of characters.entries()) {
 		const characterLength = stringWidth(character);
@@ -53,12 +37,23 @@ const wrapWord = (rows, word, columns) => {
 
 		if (ESCAPES.has(character)) {
 			isInsideEscape = true;
-		} else if (isInsideEscape && character === 'm') {
-			isInsideEscape = false;
-			continue;
+			/* istanbul ignore if: cannot enter on terminals not supporting hyperlinks */
+			if (word.slice(index).startsWith(`${character}]8;;`)) {
+				isInsideLinkEscape = true;
+			}
 		}
 
 		if (isInsideEscape) {
+			/* istanbul ignore if: cannot enter on terminals not supporting hyperlinks */
+			if (isInsideLinkEscape) {
+				if (character === '\u0007') {
+					isInsideEscape = false;
+					isInsideLinkEscape = false;
+				}
+			} else if (character === 'm') {
+				isInsideEscape = false;
+			}
+
 			continue;
 		}
 
@@ -74,17 +69,6 @@ const wrapWord = (rows, word, columns) => {
 	// ansi escape characters, handle this edge-case
 	if (!visible && rows[rows.length - 1].length > 0 && rows.length > 1) {
 		rows[rows.length - 2] += rows.pop();
-	}
-
-	/* istanbul ignore if: not easily mockable as it depends on terminal environment */
-	if (isWordUrl && terminalLink.isSupported) {
-		const linkAnsi = terminalLink(`${word}_SPLIT`, word).split(`${word}_SPLIT`);
-		rows[startRow] = [
-			rows[startRow].slice(0, startColumn),
-			linkAnsi.slice(0, -1).join(''),
-			rows[startRow].slice(startColumn)
-		].join('');
-		rows[rows.length - 1] += linkAnsi.slice(-1).join('');
 	}
 };
 
@@ -172,7 +156,7 @@ const exec = (string, columns, options = {}) => {
 			continue;
 		}
 
-		rows[rows.length - 1] += isUrl(word) ? terminalLink(word, word, {fallback: terminalLinkFallback}) : word;
+		rows[rows.length - 1] += word;
 	}
 
 	if (options.trim !== false) {
