@@ -10,6 +10,9 @@ const ESCAPES = new Set([
 
 const END_CODE = 39;
 
+const ANSI_ESCAPE_BELL = '\u0007';
+const ANSI_ESCAPE_LINK = ']8;;';
+
 const wrapAnsi = code => `${ESCAPES.values().next().value}[${code}m`;
 
 // Calculate the length of words split on ' ', ignoring
@@ -38,7 +41,7 @@ const wrapWord = (rows, word, columns) => {
 		if (ESCAPES.has(character)) {
 			isInsideEscape = true;
 			/* istanbul ignore if: cannot enter on terminals not supporting hyperlinks */
-			if (word.slice(index).startsWith(`${character}]8;;`)) {
+			if (word.slice(index).startsWith(`${character}${ANSI_ESCAPE_LINK}`)) {
 				isInsideLinkEscape = true;
 			}
 		}
@@ -46,7 +49,7 @@ const wrapWord = (rows, word, columns) => {
 		if (isInsideEscape) {
 			/* istanbul ignore if: cannot enter on terminals not supporting hyperlinks */
 			if (isInsideLinkEscape) {
-				if (character === '\u0007') {
+				if (character === ANSI_ESCAPE_BELL) {
 					isInsideEscape = false;
 					isInsideLinkEscape = false;
 				}
