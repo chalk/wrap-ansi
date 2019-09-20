@@ -1,6 +1,5 @@
 'use strict';
 const ansiStyles = require('ansi-styles');
-const escapeStringRegexp = require('escape-string-regexp');
 const stringWidth = require('string-width');
 const stripAnsi = require('strip-ansi');
 const terminalLink = require('terminal-link');
@@ -77,14 +76,15 @@ const wrapWord = (rows, word, columns) => {
 		rows[rows.length - 2] += rows.pop();
 	}
 
-	// Check if we need to hyperlinkify the word we just wrapped
-	if (isWordUrl) {
-		for (const [index, row] of rows.slice(startRow).entries()) {
-			const urlPortion = index === 0 ? row.substring(startColumn) : row;
-			rows[startRow + index] = rows[startRow + index].replace(new RegExp(`${escapeStringRegexp(urlPortion)}$`),
-				terminalLink(urlPortion, word, {fallback: terminalLinkFallback})
-			);
-		}
+	/* istanbul ignore if: not easily mockable as it depends on terminal environment */
+	if (isWordUrl && terminalLink.isSupported) {
+		const linkAnsi = terminalLink(`${word}_SPLIT`, word).split(`${word}_SPLIT`);
+		rows[startRow] = [
+			rows[startRow].slice(0, startColumn),
+			linkAnsi.slice(0, -1).join(''),
+			rows[startRow].slice(startColumn)
+		].join('');
+		rows[rows.length - 1] += linkAnsi.slice(-1).join('');
 	}
 };
 
@@ -172,7 +172,7 @@ const exec = (string, columns, options = {}) => {
 			continue;
 		}
 
-		rows[rows.length - 1] += word;
+		rows[rows.length - 1] += isUrl(word) ? terminalLink(word, word, {fallback: terminalLinkFallback}) : word;
 	}
 
 	if (options.trim !== false) {
