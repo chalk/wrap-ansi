@@ -148,3 +148,8 @@ test('#27, does not remove spaces in line with ansi escapes when no trimming', t
 	t.is(wrapAnsi(chalk.bgGreen(`  ${chalk.black('OK')} `), 100, {trim: false}), chalk.bgGreen(`  ${chalk.black('OK')} `));
 	t.is(wrapAnsi(chalk.bgGreen(' hello '), 10, {hard: true, trim: false}), chalk.bgGreen(' hello '));
 });
+
+test('#39, normalizes newlines', t => {
+	t.is(wrapAnsi('foobar\r\nfoobar\r\nfoobar\nfoobar', 3, {hard: true}), 'foo\nbar\nfoo\nbar\nfoo\nbar\nfoo\nbar');
+	t.is(wrapAnsi('foo bar\r\nfoo bar\r\nfoo bar\nfoo bar', 3), 'foo\nbar\nfoo\nbar\nfoo\nbar\nfoo\nbar');
+});
