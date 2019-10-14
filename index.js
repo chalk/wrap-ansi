@@ -1,7 +1,7 @@
 'use strict';
-const ansiStyles = require('ansi-styles');
 const stringWidth = require('string-width');
 const stripAnsi = require('strip-ansi');
+const ansiStyles = require('ansi-styles');
 
 const ESCAPES = new Set([
 	'\u001B',
