@@ -9,6 +9,7 @@ const ESCAPES = new Set([
 ]);
 
 const END_CODE = 39;
+const ESCAPE_TERMINATOR = 'm';
 
 const ANSI_ESCAPE_BELL = '\u0007';
 const ANSI_ESCAPE_LINK = ']8;;';
@@ -40,17 +41,16 @@ const wrapWord = (rows, word, columns) => {
 
 		if (ESCAPES.has(character)) {
 			isInsideEscape = true;
-			isInsideLinkEscape = word.slice(index).startsWith(`${character}${ANSI_ESCAPE_LINK}`);
+			isInsideLinkEscape = word.indexOf(`${character}${ANSI_ESCAPE_LINK}`, index) === 0;
 		}
 
 		if (isInsideEscape) {
-			/* istanbul ignore if: cannot enter on terminals not supporting hyperlinks */
 			if (isInsideLinkEscape) {
 				if (character === ANSI_ESCAPE_BELL) {
 					isInsideEscape = false;
 					isInsideLinkEscape = false;
 				}
-			} else if (character === 'm') {
+			} else if (character === ESCAPE_TERMINATOR) {
 				isInsideEscape = false;
 			}
 

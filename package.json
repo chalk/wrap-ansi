@@ -13,7 +13,7 @@
 		"node": ">=8"
 	},
 	"scripts": {
-		"test": "xo && nyc ava"
+		"test": "xo && FORCE_HYPERLINK=true nyc ava"
 	},
 	"files": [
 		"index.js"
