@@ -179,6 +179,7 @@ const exec = (string, columns, options = {}) => {
 module.exports = (string, columns, options) => {
 	return String(string)
 		.normalize()
+		.replace(/\r\n/g, '\n')
 		.split('\n')
 		.map(line => exec(line, columns, options))
 		.join('\n');
