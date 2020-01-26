@@ -25,6 +25,18 @@ console.log(wrapAnsi(input, 20));
 <img width="331" src="screenshot.png">
 
 
+
+## Hyperlink example
+```js
+const chalk = require('chalk');
+const wrapAnsi = require('./index');
+const terminalLink = require('terminal-link');
+
+const link = 'https://google.com';
+const input = `hi ${terminalLink(link, link, {fallback: text => text})}`;
+console.log(wrapAnsi(input, 20));
+```
+
 ## API
 
 ### wrapAnsi(string, columns, options?)
