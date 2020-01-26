@@ -1,4 +1,5 @@
 import test from 'ava';
+import terminalLink from 'terminal-link';
 import chalk from 'chalk';
 import hasAnsi from 'has-ansi';
 import stripAnsi from 'strip-ansi';
@@ -152,4 +153,10 @@ test('#27, does not remove spaces in line with ansi escapes when no trimming', t
 test('#39, normalizes newlines', t => {
 	t.is(wrapAnsi('foobar\r\nfoobar\r\nfoobar\nfoobar', 3, {hard: true}), 'foo\nbar\nfoo\nbar\nfoo\nbar\nfoo\nbar');
 	t.is(wrapAnsi('foo bar\r\nfoo bar\r\nfoo bar\nfoo bar', 3), 'foo\nbar\nfoo\nbar\nfoo\nbar\nfoo\nbar');
+});
+test('#35, wraps hyperlinks, preserving clickability in supporting terminals', t => {
+	const link = 'https://google.com';
+	const input = `hi http://a.com ${terminalLink(link, link, {fallback: text => text})}`;
+	const expected = 'hi http://a.com\n\u001B]8;;https://google.com\u0007https://google.c\u001B[28m\n\u001B[8mom\u001B]8;;\u0007';
+	t.is(wrapAnsi(input, 16, {hard: true}), expected);
 });
