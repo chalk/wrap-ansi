@@ -24,6 +24,7 @@ const wordLengths = string => string.split(' ').map(character => stringWidth(cha
 // Ansi escape codes do not count towards length
 const wrapWord = (rows, word, columns) => {
 	const characters = [...word];
+	const cursor = [...characters];
 
 	let isInsideEscape = false;
 	let isInsideLinkEscape = false;
@@ -31,6 +32,7 @@ const wrapWord = (rows, word, columns) => {
 
 	for (const [index, character] of characters.entries()) {
 		const characterLength = stringWidth(character);
+		cursor.shift();
 
 		if (visible + characterLength <= columns) {
 			rows[rows.length - 1] += character;
@@ -41,7 +43,7 @@ const wrapWord = (rows, word, columns) => {
 
 		if (ESCAPES.has(character)) {
 			isInsideEscape = true;
-			isInsideLinkEscape = word.indexOf(`${character}${ANSI_ESCAPE_LINK}`, index) === 0;
+			isInsideLinkEscape = cursor.join('').startsWith(ANSI_ESCAPE_LINK);
 		}
 
 		if (isInsideEscape) {
