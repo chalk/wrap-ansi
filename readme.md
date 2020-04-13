@@ -35,7 +35,7 @@ Wrap words to the specified column width.
 
 Type: `string`
 
-String with ANSI escape codes. Like one styled by [`chalk`](https://github.com/chalk/chalk).
+String with ANSI escape codes. Like one styled by [`chalk`](https://github.com/chalk/chalk). Newline characters will be normalized to `\n`.
 
 #### columns
 
