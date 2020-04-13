@@ -162,6 +162,7 @@ test('#35, wraps coloured hyperlinks, preserving clickability in supporting term
 	const input = `hi http://js.io ${terminalLink(chalk.bgGreen(link), link, {fallback: text => text})}`;
 	const expected = `hi http://js.io\n\u001B]8;;https://testlogin:testpassword@areallylongurlthatneedstogetwrapped.com/with_some/path?andparams=bogus&more=evenmorebogus#evensomehashparams=notdoinganything\u0007${chalk.bgGreen('https://testlogi\nn:testpassword@a\nreallylongurltha\ntneedstogetwrapp\ned.com/with_some\n/path?andparams=\nbogus&more=evenm\norebogus#evensom\nehashparams=notd\noinganything')}\u001B]8;;\u0007`;
 	t.is(wrapAnsi(input, 16, {hard: true}), expected);
+});
 
 test('#39, normalizes newlines', t => {
 	t.is(wrapAnsi('foobar\r\nfoobar\r\nfoobar\nfoobar', 3, {hard: true}), 'foo\nbar\nfoo\nbar\nfoo\nbar\nfoo\nbar');
