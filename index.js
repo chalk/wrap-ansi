@@ -9,14 +9,14 @@ const ESCAPES = new Set([
 ]);
 
 const END_CODE = 39;
-const ESCAPE_TERMINATOR = 'm';
 
 const ANSI_ESCAPE_BELL = '\u0007';
 const ANSI_CSI = '[';
 const ANSI_OSC = ']';
+const ANSI_SGR_TERMINATOR = 'm';
 const ANSI_ESCAPE_LINK = `${ANSI_OSC}8;;`;
 
-const wrapAnsi = code => `${ESCAPES.values().next().value}${ANSI_CSI}${code}m`;
+const wrapAnsi = code => `${ESCAPES.values().next().value}${ANSI_CSI}${code}${ANSI_SGR_TERMINATOR}`;
 const wrapAnsiHyperlink = uri => `${ESCAPES.values().next().value}${ANSI_ESCAPE_LINK}${uri}${ANSI_ESCAPE_BELL}`;
 
 // Calculate the length of words split on ' ', ignoring
@@ -55,7 +55,7 @@ const wrapWord = (rows, word, columns) => {
 					isInsideEscape = false;
 					isInsideLinkEscape = false;
 				}
-			} else if (character === ESCAPE_TERMINATOR) {
+			} else if (character === ANSI_SGR_TERMINATOR) {
 				isInsideEscape = false;
 			}
 
