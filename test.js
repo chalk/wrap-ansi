@@ -151,17 +151,19 @@ test('#27, does not remove spaces in line with ansi escapes when no trimming', t
 });
 
 test('#35, wraps hyperlinks, preserving clickability in supporting terminals', t => {
-	const link = 'https://testlogin:testpassword@areallylongurlthatneedstogetwrapped.com/with_some/path?andparams=bogus&more=evenmorebogus#evensomehashparams=notdoinganything';
-	const input = `hi http://js.io ${terminalLink(link, link, {fallback: text => text})}`;
-	const expected = 'hi http://js.io\n\u001B]8;;https://testlogin:testpassword@areallylongurlthatneedstogetwrapped.com/with_some/path?andparams=bogus&more=evenmorebogus#evensomehashparams=notdoinganything\u0007https://testlogi\u001B[28m\n\u001B[8mn:testpassword@a\u001B[28m\n\u001B[8mreallylongurltha\u001B[28m\n\u001B[8mtneedstogetwrapp\u001B[28m\n\u001B[8med.com/with_some\u001B[28m\n\u001B[8m/path?andparams=\u001B[28m\n\u001B[8mbogus&more=evenm\u001B[28m\n\u001B[8morebogus#evensom\u001B[28m\n\u001B[8mehashparams=notd\u001B[28m\n\u001B[8moinganything\u001B]8;;\u0007';
-	t.is(wrapAnsi(input, 16, {hard: true}), expected);
+	const link = 'https://www.example.com';
+	const opts = {fallback: text => text};
+
+	const result1 = wrapAnsi(`Check out ${terminalLink('my website', link, opts)}, it is ${terminalLink('supercalifragilisticexpialidocious', link, opts)}.`, 16, {hard: true});
+	t.is(result1, 'Check out \u001B]8;;https://www.example.com\u0007my\u001B]8;;\u0007\n\u001B]8;;https://www.example.com\u0007website\u001B]8;;\u0007, it is\n\u001B]8;;https://www.example.com\u0007supercalifragili\u001B]8;;\u0007\n\u001B]8;;https://www.example.com\u0007sticexpialidocio\u001B]8;;\u0007\n\u001B]8;;https://www.example.com\u0007us\u001B]8;;\u0007.');
+
+	const result2 = wrapAnsi(`Check out ${terminalLink(`my \uD83C\uDE00 ${chalk.bgGreen('website')}`, link, opts)}, it ${chalk.bgRed(`is ${terminalLink('super\uD83C\uDE00califragilisticexpialidocious', link, opts)}`)}.`, 16, {hard: true});
+	t.is(result2, 'Check out \u001B]8;;https://www.example.com\u0007my 🈀\u001B]8;;\u0007\n\u001B]8;;https://www.example.com\u0007\u001B[42mwebsite\u001B[49m\u001B]8;;\u0007, it \u001B[41mis\u001B[49m\n\u001B[41m\u001B]8;;https://www.example.com\u0007super🈀califragi\u001B]8;;\u0007\u001B[49m\n\u001B[41m\u001B]8;;https://www.example.com\u0007listicexpialidoc\u001B]8;;\u0007\u001B[49m\n\u001B[41m\u001B]8;;https://www.example.com\u0007ious\u001B]8;;\u0007\u001B[49m.');
 });
 
-test('#35, wraps coloured hyperlinks, preserving clickability in supporting terminals', t => {
-	const link = 'https://testlogin:testpassword@areallylongurlthatneedstogetwrapped.com/with_some/path?andparams=bogus&more=evenmorebogus#evensomehashparams=notdoinganything';
-	const input = `hi http://js.io ${terminalLink(chalk.bgGreen(link), link, {fallback: text => text})}`;
-	const expected = `hi http://js.io\n\u001B]8;;https://testlogin:testpassword@areallylongurlthatneedstogetwrapped.com/with_some/path?andparams=bogus&more=evenmorebogus#evensomehashparams=notdoinganything\u0007${chalk.bgGreen('https://testlogi\nn:testpassword@a\nreallylongurltha\ntneedstogetwrapp\ned.com/with_some\n/path?andparams=\nbogus&more=evenm\norebogus#evensom\nehashparams=notd\noinganything')}\u001B]8;;\u0007`;
-	t.is(wrapAnsi(input, 16, {hard: true}), expected);
+test('covers non-SGR/non-hyperlink ansi escapes', t => {
+	t.is(wrapAnsi('Hello, \u001B[1D World!', 8), 'Hello,\u001B[1D\nWorld!');
+	t.is(wrapAnsi('Hello, \u001B[1D World!', 8, {trim: false}), 'Hello, \u001B[1D \nWorld!');
 });
 
 test('#39, normalizes newlines', t => {
