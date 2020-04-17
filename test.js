@@ -2,7 +2,6 @@ import test from 'ava';
 import chalk from 'chalk';
 import hasAnsi from 'has-ansi';
 import stripAnsi from 'strip-ansi';
-import terminalLink from 'terminal-link';
 import wrapAnsi from '.';
 
 chalk.enabled = true;
@@ -151,13 +150,10 @@ test('#27, does not remove spaces in line with ansi escapes when no trimming', t
 });
 
 test('#35, wraps hyperlinks, preserving clickability in supporting terminals', t => {
-	const link = 'https://www.example.com';
-	const opts = {fallback: text => text};
-
-	const result1 = wrapAnsi(`Check out ${terminalLink('my website', link, opts)}, it is ${terminalLink('supercalifragilisticexpialidocious', link, opts)}.`, 16, {hard: true});
+	const result1 = wrapAnsi('Check out \u001B]8;;https://www.example.com\u0007my website\u001B]8;;\u0007, it is \u001B]8;;https://www.example.com\u0007supercalifragilisticexpialidocious\u001B]8;;\u0007.', 16, {hard: true});
 	t.is(result1, 'Check out \u001B]8;;https://www.example.com\u0007my\u001B]8;;\u0007\n\u001B]8;;https://www.example.com\u0007website\u001B]8;;\u0007, it is\n\u001B]8;;https://www.example.com\u0007supercalifragili\u001B]8;;\u0007\n\u001B]8;;https://www.example.com\u0007sticexpialidocio\u001B]8;;\u0007\n\u001B]8;;https://www.example.com\u0007us\u001B]8;;\u0007.');
 
-	const result2 = wrapAnsi(`Check out ${terminalLink(`my \uD83C\uDE00 ${chalk.bgGreen('website')}`, link, opts)}, it ${chalk.bgRed(`is ${terminalLink('super\uD83C\uDE00califragilisticexpialidocious', link, opts)}`)}.`, 16, {hard: true});
+	const result2 = wrapAnsi(`Check out \u001B]8;;https://www.example.com\u0007my \uD83C\uDE00 ${chalk.bgGreen('website')}\u001B]8;;\u0007, it ${chalk.bgRed('is \u001B]8;;https://www.example.com\u0007super\uD83C\uDE00califragilisticexpialidocious\u001B]8;;\u0007')}.`, 16, {hard: true});
 	t.is(result2, 'Check out \u001B]8;;https://www.example.com\u0007my 🈀\u001B]8;;\u0007\n\u001B]8;;https://www.example.com\u0007\u001B[42mwebsite\u001B[49m\u001B]8;;\u0007, it \u001B[41mis\u001B[49m\n\u001B[41m\u001B]8;;https://www.example.com\u0007super🈀califragi\u001B]8;;\u0007\u001B[49m\n\u001B[41m\u001B]8;;https://www.example.com\u0007listicexpialidoc\u001B]8;;\u0007\u001B[49m\n\u001B[41m\u001B]8;;https://www.example.com\u0007ious\u001B]8;;\u0007\u001B[49m.');
 });
 
