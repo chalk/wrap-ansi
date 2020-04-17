@@ -172,12 +172,12 @@ const exec = (string, columns, options = {}) => {
 		ret += character;
 
 		if (ESCAPES.has(character)) {
-			const {groups} = new RegExp(`(?:\\${ANSI_CSI}(?<code>\\d+)m|\\${ANSI_ESCAPE_LINK}(?<uri>.*)${ANSI_ESCAPE_BELL})`).exec(pre.slice(index).join('')) || {groups: {}};
-			if (groups.code !== undefined) {
-				const code = parseFloat(groups.code);
-				escapeCode = code === END_CODE ? null : code;
-			} else if (groups.uri !== undefined) {
-				escapeUri = groups.uri.length === 0 ? null : groups.uri;
+			const [, code, uri] = new RegExp(`(?:\\${ANSI_CSI}(\\d+)m|\\${ANSI_ESCAPE_LINK}(.*)${ANSI_ESCAPE_BELL})`).exec(pre.slice(index).join('')) || [];
+			if (code !== undefined) {
+				const c = parseFloat(code);
+				escapeCode = c === END_CODE ? null : c;
+			} else if (uri !== undefined) {
+				escapeUri = uri.length === 0 ? null : uri;
 			}
 		}
 
