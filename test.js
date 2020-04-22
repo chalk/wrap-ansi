@@ -149,6 +149,19 @@ test('#27, does not remove spaces in line with ansi escapes when no trimming', t
 	t.is(wrapAnsi(chalk.bgGreen(' hello '), 10, {hard: true, trim: false}), chalk.bgGreen(' hello '));
 });
 
+test('#35, wraps hyperlinks, preserving clickability in supporting terminals', t => {
+	const result1 = wrapAnsi('Check out \u001B]8;;https://www.example.com\u0007my website\u001B]8;;\u0007, it is \u001B]8;;https://www.example.com\u0007supercalifragilisticexpialidocious\u001B]8;;\u0007.', 16, {hard: true});
+	t.is(result1, 'Check out \u001B]8;;https://www.example.com\u0007my\u001B]8;;\u0007\n\u001B]8;;https://www.example.com\u0007website\u001B]8;;\u0007, it is\n\u001B]8;;https://www.example.com\u0007supercalifragili\u001B]8;;\u0007\n\u001B]8;;https://www.example.com\u0007sticexpialidocio\u001B]8;;\u0007\n\u001B]8;;https://www.example.com\u0007us\u001B]8;;\u0007.');
+
+	const result2 = wrapAnsi(`Check out \u001B]8;;https://www.example.com\u0007my \uD83C\uDE00 ${chalk.bgGreen('website')}\u001B]8;;\u0007, it ${chalk.bgRed('is \u001B]8;;https://www.example.com\u0007super\uD83C\uDE00califragilisticexpialidocious\u001B]8;;\u0007')}.`, 16, {hard: true});
+	t.is(result2, 'Check out \u001B]8;;https://www.example.com\u0007my 🈀\u001B]8;;\u0007\n\u001B]8;;https://www.example.com\u0007\u001B[42mwebsite\u001B[49m\u001B]8;;\u0007, it \u001B[41mis\u001B[49m\n\u001B[41m\u001B]8;;https://www.example.com\u0007super🈀califragi\u001B]8;;\u0007\u001B[49m\n\u001B[41m\u001B]8;;https://www.example.com\u0007listicexpialidoc\u001B]8;;\u0007\u001B[49m\n\u001B[41m\u001B]8;;https://www.example.com\u0007ious\u001B]8;;\u0007\u001B[49m.');
+});
+
+test('covers non-SGR/non-hyperlink ansi escapes', t => {
+	t.is(wrapAnsi('Hello, \u001B[1D World!', 8), 'Hello,\u001B[1D\nWorld!');
+	t.is(wrapAnsi('Hello, \u001B[1D World!', 8, {trim: false}), 'Hello, \u001B[1D \nWorld!');
+});
+
 test('#39, normalizes newlines', t => {
 	t.is(wrapAnsi('foobar\r\nfoobar\r\nfoobar\nfoobar', 3, {hard: true}), 'foo\nbar\nfoo\nbar\nfoo\nbar\nfoo\nbar');
 	t.is(wrapAnsi('foo bar\r\nfoo bar\r\nfoo bar\nfoo bar', 3), 'foo\nbar\nfoo\nbar\nfoo\nbar\nfoo\nbar');

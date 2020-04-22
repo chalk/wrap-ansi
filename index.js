@@ -10,7 +10,14 @@ const ESCAPES = new Set([
 
 const END_CODE = 39;
 
-const wrapAnsi = code => `${ESCAPES.values().next().value}[${code}m`;
+const ANSI_ESCAPE_BELL = '\u0007';
+const ANSI_CSI = '[';
+const ANSI_OSC = ']';
+const ANSI_SGR_TERMINATOR = 'm';
+const ANSI_ESCAPE_LINK = `${ANSI_OSC}8;;`;
+
+const wrapAnsi = code => `${ESCAPES.values().next().value}${ANSI_CSI}${code}${ANSI_SGR_TERMINATOR}`;
+const wrapAnsiHyperlink = uri => `${ESCAPES.values().next().value}${ANSI_ESCAPE_LINK}${uri}${ANSI_ESCAPE_BELL}`;
 
 // Calculate the length of words split on ' ', ignoring
 // the extra characters added by ansi escape codes
@@ -22,6 +29,7 @@ const wrapWord = (rows, word, columns) => {
 	const characters = [...word];
 
 	let isInsideEscape = false;
+	let isInsideLinkEscape = false;
 	let visible = stringWidth(stripAnsi(rows[rows.length - 1]));
 
 	for (const [index, character] of characters.entries()) {
@@ -36,12 +44,19 @@ const wrapWord = (rows, word, columns) => {
 
 		if (ESCAPES.has(character)) {
 			isInsideEscape = true;
-		} else if (isInsideEscape && character === 'm') {
-			isInsideEscape = false;
-			continue;
+			isInsideLinkEscape = characters.slice(index + 1).join('').startsWith(ANSI_ESCAPE_LINK);
 		}
 
 		if (isInsideEscape) {
+			if (isInsideLinkEscape) {
+				if (character === ANSI_ESCAPE_BELL) {
+					isInsideEscape = false;
+					isInsideLinkEscape = false;
+				}
+			} else if (character === ANSI_SGR_TERMINATOR) {
+				isInsideEscape = false;
+			}
+
 			continue;
 		}
 
@@ -90,9 +105,9 @@ const exec = (string, columns, options = {}) => {
 		return '';
 	}
 
-	let pre = '';
 	let ret = '';
 	let escapeCode;
+	let escapeUri;
 
 	const lengths = wordLengths(string);
 	let rows = [''];
@@ -151,23 +166,38 @@ const exec = (string, columns, options = {}) => {
 		rows = rows.map(stringVisibleTrimSpacesRight);
 	}
 
-	pre = rows.join('\n');
+	const pre = [...rows.join('\n')];
 
-	for (const [index, character] of [...pre].entries()) {
+	for (const [index, character] of pre.entries()) {
 		ret += character;
 
 		if (ESCAPES.has(character)) {
-			const code = parseFloat(/\d[^m]*/.exec(pre.slice(index, index + 4)));
-			escapeCode = code === END_CODE ? null : code;
+			const {groups} = new RegExp(`(?:\\${ANSI_CSI}(?<code>\\d+)m|\\${ANSI_ESCAPE_LINK}(?<uri>.*)${ANSI_ESCAPE_BELL})`).exec(pre.slice(index).join('')) || {groups: {}};
+			if (groups.code !== undefined) {
+				const code = parseFloat(groups.code);
+				escapeCode = code === END_CODE ? null : code;
+			} else if (groups.uri !== undefined) {
+				escapeUri = groups.uri.length === 0 ? null : groups.uri;
+			}
 		}
 
 		const code = ansiStyles.codes.get(Number(escapeCode));
 
-		if (escapeCode && code) {
-			if (pre[index + 1] === '\n') {
+		if (pre[index + 1] === '\n') {
+			if (escapeUri) {
+				ret += wrapAnsiHyperlink('');
+			}
+
+			if (escapeCode && code) {
 				ret += wrapAnsi(code);
-			} else if (character === '\n') {
+			}
+		} else if (character === '\n') {
+			if (escapeCode && code) {
 				ret += wrapAnsi(escapeCode);
+			}
+
+			if (escapeUri) {
+				ret += wrapAnsiHyperlink(escapeUri);
 			}
 		}
 	}
