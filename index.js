@@ -76,8 +76,8 @@ const wrapWord = (rows, word, columns) => {
 };
 
 // Trims spaces from a string ignoring invisible sequences
-const stringVisibleTrimSpacesRight = str => {
-	const words = str.split(' ');
+const stringVisibleTrimSpacesRight = string => {
+	const words = string.split(' ');
 	let last = words.length;
 
 	while (last > 0) {
@@ -89,7 +89,7 @@ const stringVisibleTrimSpacesRight = str => {
 	}
 
 	if (last === words.length) {
-		return str;
+		return string;
 	}
 
 	return words.slice(0, last).join(' ') + words.slice(last).join('');
@@ -105,16 +105,16 @@ const exec = (string, columns, options = {}) => {
 		return '';
 	}
 
-	let ret = '';
+	let returnValue = '';
 	let escapeCode;
-	let escapeUri;
+	let escapeUrl;
 
 	const lengths = wordLengths(string);
 	let rows = [''];
 
 	for (const [index, word] of string.split(' ').entries()) {
 		if (options.trim !== false) {
-			rows[rows.length - 1] = rows[rows.length - 1].trimLeft();
+			rows[rows.length - 1] = rows[rows.length - 1].trimStart();
 		}
 
 		let rowLength = stringWidth(rows[rows.length - 1]);
@@ -169,40 +169,40 @@ const exec = (string, columns, options = {}) => {
 	const pre = [...rows.join('\n')];
 
 	for (const [index, character] of pre.entries()) {
-		ret += character;
+		returnValue += character;
 
 		if (ESCAPES.has(character)) {
 			const {groups} = new RegExp(`(?:\\${ANSI_CSI}(?<code>\\d+)m|\\${ANSI_ESCAPE_LINK}(?<uri>.*)${ANSI_ESCAPE_BELL})`).exec(pre.slice(index).join('')) || {groups: {}};
 			if (groups.code !== undefined) {
-				const code = parseFloat(groups.code);
-				escapeCode = code === END_CODE ? null : code;
+				const code = Number.parseFloat(groups.code);
+				escapeCode = code === END_CODE ? undefined : code;
 			} else if (groups.uri !== undefined) {
-				escapeUri = groups.uri.length === 0 ? null : groups.uri;
+				escapeUrl = groups.uri.length === 0 ? undefined : groups.uri;
 			}
 		}
 
 		const code = ansiStyles.codes.get(Number(escapeCode));
 
 		if (pre[index + 1] === '\n') {
-			if (escapeUri) {
-				ret += wrapAnsiHyperlink('');
+			if (escapeUrl) {
+				returnValue += wrapAnsiHyperlink('');
 			}
 
 			if (escapeCode && code) {
-				ret += wrapAnsi(code);
+				returnValue += wrapAnsi(code);
 			}
 		} else if (character === '\n') {
 			if (escapeCode && code) {
-				ret += wrapAnsi(escapeCode);
+				returnValue += wrapAnsi(escapeCode);
 			}
 
-			if (escapeUri) {
-				ret += wrapAnsiHyperlink(escapeUri);
+			if (escapeUrl) {
+				returnValue += wrapAnsiHyperlink(escapeUrl);
 			}
 		}
 	}
 
-	return ret;
+	return returnValue;
 };
 
 // For each newline, invoke the method separately
