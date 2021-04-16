@@ -2,9 +2,8 @@ import test from 'ava';
 import chalk from 'chalk';
 import hasAnsi from 'has-ansi';
 import stripAnsi from 'strip-ansi';
-import wrapAnsi from '.';
+import wrapAnsi from './index.js';
 
-chalk.enabled = true;
 chalk.level = 1;
 
 // When "hard" is false

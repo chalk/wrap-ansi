@@ -11,8 +11,8 @@ $ npm install wrap-ansi
 ## Usage
 
 ```js
-const chalk = require('chalk');
-const wrapAnsi = require('wrap-ansi');
+import chalk from 'chalk';
+import wrapAnsi from 'wrap-ansi';
 
 const input = 'The quick brown ' + chalk.red('fox jumped over ') +
 	'the lazy ' + chalk.green('dog and then ran away with the unicorn.');
