@@ -32,7 +32,7 @@ test('does not break strings longer than "cols" characters', t => {
 	const result = wrapAnsi(fixture, 5, {hard: false});
 
 	t.is(result, 'The\nquick\nbrown\n\u001B[31mfox\u001B[39m\n\u001B[31mjumped\u001B[39m\n\u001B[31mover\u001B[39m\n\u001B[31m\u001B[39mthe\nlazy\n\u001B[32mdog\u001B[39m\n\u001B[32mand\u001B[39m\n\u001B[32mthen\u001B[39m\n\u001B[32mran\u001B[39m\n\u001B[32maway\u001B[39m\n\u001B[32mwith\u001B[39m\n\u001B[32mthe\u001B[39m\n\u001B[32municorn.\u001B[39m');
-	t.true(stripAnsi(result).split('\n').filter(line => line.length > 5).length > 0);
+	t.true(stripAnsi(result).split('\n').some(line => line.length > 5));
 });
 
 test('handles colored string that wraps on to multiple lines', t => {
