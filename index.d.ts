@@ -27,6 +27,17 @@ Wrap words to the specified column width.
 @param input String with ANSI escape codes. Like one styled by [`chalk`](https://github.com/chalk/chalk). Newline characters will be normalized to `\n`.
 @param columns Number of columns to wrap the text to.
 @param options
+
+@example
+```
+import chalk from 'chalk';
+import wrapAnsi from 'wrap-ansi';
+
+const input = 'The quick brown ' + chalk.red('fox jumped over ') +
+	'the lazy ' + chalk.green('dog and then ran away with the unicorn.');
+
+console.log(wrapAnsi(input, 20));
+```
 */
 declare function wrapAnsi(string: string, columns: number, options?: Options): string;
 
