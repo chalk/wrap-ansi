@@ -24,7 +24,7 @@ interface Options {
 /**
 Wrap words to the specified column width.
 
-@param input String with ANSI escape codes. Like one styled by [`chalk`](https://github.com/chalk/chalk). Newline characters will be normalized to `\n`.
+@param string String with ANSI escape codes. Like one styled by [`chalk`](https://github.com/chalk/chalk). Newline characters will be normalized to `\n`.
 @param columns Number of columns to wrap the text to.
 @param options
 
