@@ -4,21 +4,21 @@ interface Options {
 
 	@default false
 	*/
-	hard?: boolean | undefined;
+	readonly hard?: boolean | undefined;
 
 	/**
 	By default, an attempt is made to split words at spaces, ensuring that they don't extend past the configured columns. If wordWrap is `false`, each column will instead be completely filled splitting words as necessary.
 
 	@default true
 	*/
-	wordWrap?: boolean | undefined;
+	readonly wordWrap?: boolean | undefined;
 
 	/**
 	Whitespace on all lines is removed by default. Set this option to `false` if you don't want to trim.
 
 	@default true
 	*/
-	trim?: boolean | undefined;
+	readonly trim?: boolean | undefined;
 }
 
 /**
