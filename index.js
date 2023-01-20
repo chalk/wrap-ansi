@@ -41,8 +41,9 @@ const wrapWord = (rows, word, columns) => {
 		}
 
 		if (ESCAPES.has(character)) {
-			const ansiEscapeLinkCandidate = characters.slice(index + 1, index + 1 + ANSI_ESCAPE_LINK.length).join('');
 			isInsideEscape = true;
+
+			const ansiEscapeLinkCandidate = characters.slice(index + 1, index + 1 + ANSI_ESCAPE_LINK.length).join('');
 			isInsideLinkEscape = ansiEscapeLinkCandidate === ANSI_ESCAPE_LINK;
 		}
 
