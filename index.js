@@ -168,7 +168,7 @@ const exec = (string, columns, options = {}) => {
 	const preString = rows.join('\n');
 	const pre = [...preString];
 
-	// Account for unicode characters with length 2
+	// We need to keep a separate index as `String#slice()` works on Unicode code units, while `pre` is an array of codepoints.
 	let preStringIndex = 0;
 
 	for (const [index, character] of pre.entries()) {
