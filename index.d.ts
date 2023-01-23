@@ -1,4 +1,4 @@
-interface Options {
+export type Options = {
 	/**
 	By default the wrap is soft, meaning long words may extend past the column width. Setting this to `true` will make it hard wrap at the column width.
 
@@ -19,14 +19,13 @@ interface Options {
 	@default true
 	*/
 	readonly trim?: boolean;
-}
+};
 
 /**
 Wrap words to the specified column width.
 
-@param string String with ANSI escape codes. Like one styled by [`chalk`](https://github.com/chalk/chalk). Newline characters will be normalized to `\n`.
-@param columns Number of columns to wrap the text to.
-@param options
+@param string - String with ANSI escape codes. Like one styled by [`chalk`](https://github.com/chalk/chalk). Newline characters will be normalized to `\n`.
+@param columns - Number of columns to wrap the text to.
 
 @example
 ```
@@ -39,6 +38,5 @@ const input = 'The quick brown ' + chalk.red('fox jumped over ') +
 console.log(wrapAnsi(input, 20));
 ```
 */
-declare function wrapAnsi(string: string, columns: number, options?: Options): string;
+export default function wrapAnsi(string: string, columns: number, options?: Options): string;
 
-export default wrapAnsi;
