@@ -39,4 +39,3 @@ console.log(wrapAnsi(input, 20));
 ```
 */
 export default function wrapAnsi(string: string, columns: number, options?: Options): string;
-
