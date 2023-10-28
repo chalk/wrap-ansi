@@ -15,7 +15,7 @@ const ANSI_SGR_TERMINATOR = 'm';
 const ANSI_ESCAPE_LINK = `${ANSI_OSC}8;;`;
 
 const wrapAnsiCode = code => `${ESCAPES.values().next().value}${ANSI_CSI}${code}${ANSI_SGR_TERMINATOR}`;
-const wrapAnsiHyperlink = uri => `${ESCAPES.values().next().value}${ANSI_ESCAPE_LINK}${uri}${ANSI_ESCAPE_BELL}`;
+const wrapAnsiHyperlink = url => `${ESCAPES.values().next().value}${ANSI_ESCAPE_LINK}${url}${ANSI_ESCAPE_BELL}`;
 
 // Calculate the length of words split on ' ', ignoring
 // the extra characters added by ansi escape codes
@@ -28,7 +28,7 @@ const wrapWord = (rows, word, columns) => {
 
 	let isInsideEscape = false;
 	let isInsideLinkEscape = false;
-	let visible = stringWidth(stripAnsi(rows[rows.length - 1]));
+	let visible = stringWidth(stripAnsi(rows.at(-1)));
 
 	for (const [index, character] of characters.entries()) {
 		const characterLength = stringWidth(character);
@@ -70,7 +70,7 @@ const wrapWord = (rows, word, columns) => {
 
 	// It's possible that the last row we copy over is only
 	// ansi escape characters, handle this edge-case
-	if (!visible && rows[rows.length - 1].length > 0 && rows.length > 1) {
+	if (!visible && rows.at(-1).length > 0 && rows.length > 1) {
 		rows[rows.length - 2] += rows.pop();
 	}
 };
@@ -95,11 +95,11 @@ const stringVisibleTrimSpacesRight = string => {
 	return words.slice(0, last).join(' ') + words.slice(last).join('');
 };
 
-// The wrap-ansi module can be invoked in either 'hard' or 'soft' wrap mode
+// The wrap-ansi module can be invoked in either 'hard' or 'soft' wrap mode.
 //
-// 'hard' will never allow a string to take up more than columns characters
+// 'hard' will never allow a string to take up more than columns characters.
 //
-// 'soft' allows long words to expand past the column length
+// 'soft' allows long words to expand past the column length.
 const exec = (string, columns, options = {}) => {
 	if (options.trim !== false && string.trim() === '') {
 		return '';
@@ -114,10 +114,10 @@ const exec = (string, columns, options = {}) => {
 
 	for (const [index, word] of string.split(' ').entries()) {
 		if (options.trim !== false) {
-			rows[rows.length - 1] = rows[rows.length - 1].trimStart();
+			rows[rows.length - 1] = rows.at(-1).trimStart();
 		}
 
-		let rowLength = stringWidth(rows[rows.length - 1]);
+		let rowLength = stringWidth(rows.at(-1));
 
 		if (index !== 0) {
 			if (rowLength >= columns && (options.wordWrap === false || options.trim === false)) {
@@ -215,7 +215,7 @@ const exec = (string, columns, options = {}) => {
 export default function wrapAnsi(string, columns, options) {
 	return String(string)
 		.normalize()
-		.replace(/\r\n/g, '\n')
+		.replaceAll('\r\n', '\n')
 		.split('\n')
 		.map(line => exec(line, columns, options))
 		.join('\n');

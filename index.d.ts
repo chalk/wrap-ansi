@@ -24,8 +24,8 @@ export type Options = {
 /**
 Wrap words to the specified column width.
 
-@param string - String with ANSI escape codes. Like one styled by [`chalk`](https://github.com/chalk/chalk). Newline characters will be normalized to `\n`.
-@param columns - Number of columns to wrap the text to.
+@param string - A string with ANSI escape codes, like one styled by [`chalk`](https://github.com/chalk/chalk). Newline characters will be normalized to `\n`.
+@param columns - The number of columns to wrap the text to.
 
 @example
 ```

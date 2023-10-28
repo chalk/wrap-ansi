@@ -16,7 +16,7 @@
 		"default": "./index.js"
 	},
 	"engines": {
-		"node": ">=12"
+		"node": ">=18"
 	},
 	"scripts": {
 		"test": "xo && nyc ava && tsd"
@@ -53,17 +53,17 @@
 		"text"
 	],
 	"dependencies": {
-		"ansi-styles": "^6.1.0",
-		"string-width": "^5.0.1",
-		"strip-ansi": "^7.0.1"
+		"ansi-styles": "^6.2.1",
+		"string-width": "^7.0.0",
+		"strip-ansi": "^7.1.0"
 	},
 	"devDependencies": {
-		"ava": "^3.15.0",
-		"chalk": "^4.1.2",
+		"ava": "^5.3.1",
+		"chalk": "^5.3.0",
 		"coveralls": "^3.1.1",
 		"has-ansi": "^5.0.1",
 		"nyc": "^15.1.0",
-		"tsd": "^0.25.0",
-		"xo": "^0.44.0"
+		"tsd": "^0.29.0",
+		"xo": "^0.56.0"
 	}
 }

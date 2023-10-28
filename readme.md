@@ -4,8 +4,8 @@
 
 ## Install
 
-```
-$ npm install wrap-ansi
+```sh
+npm install wrap-ansi
 ```
 
 ## Usage
@@ -32,13 +32,15 @@ Wrap words to the specified column width.
 
 Type: `string`
 
-String with ANSI escape codes. Like one styled by [`chalk`](https://github.com/chalk/chalk). Newline characters will be normalized to `\n`.
+A string with ANSI escape codes, like one styled by [`chalk`](https://github.com/chalk/chalk).
+
+Newline characters will be normalized to `\n`.
 
 #### columns
 
 Type: `number`
 
-Number of columns to wrap the text to.
+The number of columns to wrap the text to.
 
 #### options
 
@@ -71,21 +73,3 @@ Whitespace on all lines is removed by default. Set this option to `false` if you
 - [cli-truncate](https://github.com/sindresorhus/cli-truncate) - Truncate a string to a specific width in the terminal
 - [chalk](https://github.com/chalk/chalk) - Terminal string styling done right
 - [jsesc](https://github.com/mathiasbynens/jsesc) - Generate ASCII-only output from Unicode strings. Useful for creating test fixtures.
-
-## Maintainers
-
-- [Sindre Sorhus](https://github.com/sindresorhus)
-- [Josh Junon](https://github.com/qix-)
-- [Benjamin Coe](https://github.com/bcoe)
-
----
-
-<div align="center">
-	<b>
-		<a href="https://tidelift.com/subscription/pkg/npm-wrap_ansi?utm_source=npm-wrap-ansi&utm_medium=referral&utm_campaign=readme">Get professional support for this package with a Tidelift subscription</a>
-	</b>
-	<br>
-	<sub>
-		Tidelift helps make open source sustainable for maintainers while giving companies<br>assurances about security, maintenance, and licensing for their dependencies.
-	</sub>
-</div>
