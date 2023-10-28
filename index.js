@@ -42,7 +42,9 @@ const wrapWord = (rows, word, columns) => {
 
 		if (ESCAPES.has(character)) {
 			isInsideEscape = true;
-			isInsideLinkEscape = characters.slice(index + 1).join('').startsWith(ANSI_ESCAPE_LINK);
+
+			const ansiEscapeLinkCandidate = characters.slice(index + 1, index + 1 + ANSI_ESCAPE_LINK.length).join('');
+			isInsideLinkEscape = ansiEscapeLinkCandidate === ANSI_ESCAPE_LINK;
 		}
 
 		if (isInsideEscape) {
@@ -164,13 +166,17 @@ const exec = (string, columns, options = {}) => {
 		rows = rows.map(row => stringVisibleTrimSpacesRight(row));
 	}
 
-	const pre = [...rows.join('\n')];
+	const preString = rows.join('\n');
+	const pre = [...preString];
+
+	// We need to keep a separate index as `String#slice()` works on Unicode code units, while `pre` is an array of codepoints.
+	let preStringIndex = 0;
 
 	for (const [index, character] of pre.entries()) {
 		returnValue += character;
 
 		if (ESCAPES.has(character)) {
-			const {groups} = new RegExp(`(?:\\${ANSI_CSI}(?<code>\\d+)m|\\${ANSI_ESCAPE_LINK}(?<uri>.*)${ANSI_ESCAPE_BELL})`).exec(pre.slice(index).join('')) || {groups: {}};
+			const {groups} = new RegExp(`(?:\\${ANSI_CSI}(?<code>\\d+)m|\\${ANSI_ESCAPE_LINK}(?<uri>.*)${ANSI_ESCAPE_BELL})`).exec(preString.slice(preStringIndex)) || {groups: {}};
 			if (groups.code !== undefined) {
 				const code = Number.parseFloat(groups.code);
 				escapeCode = code === END_CODE ? undefined : code;
@@ -198,6 +204,8 @@ const exec = (string, columns, options = {}) => {
 				returnValue += wrapAnsiHyperlink(escapeUrl);
 			}
 		}
+
+		preStringIndex += character.length;
 	}
 
 	return returnValue;
