@@ -1,6 +1,6 @@
 {
 	"name": "wrap-ansi",
-	"version": "9.0.0",
+	"version": "9.0.2",
 	"description": "Wordwrap a string with ANSI escape codes",
 	"license": "MIT",
 	"repository": "chalk/wrap-ansi",
