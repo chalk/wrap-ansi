@@ -22,11 +22,11 @@ const wrapAnsiCode = code => `${ANSI_ESCAPE}${ANSI_CSI}${code}${ANSI_SGR_TERMINA
 const wrapAnsiHyperlink = url => `${ANSI_ESCAPE}${ANSI_ESCAPE_LINK}${url}${ANSI_ESCAPE_BELL}`;
 
 // Calculate the length of words split on ' ', ignoring
-// the extra characters added by ansi escape codes
-const wordLengths = string => string.split(' ').map(character => stringWidth(character));
+// the extra characters added by ANSI escape codes
+const wordLengths = string => string.split(' ').map(word => stringWidth(word));
 
 // Wrap a long word across multiple rows
-// Ansi escape codes do not count towards length
+// ANSI escape codes do not count towards length
 const wrapWord = (rows, word, columns) => {
 	const characters = [...word];
 
@@ -53,11 +53,10 @@ const wrapWord = (rows, word, columns) => {
 
 		if (isInsideEscape) {
 			if (isInsideLinkEscape) {
-				if (character === ANSI_ESCAPE_BELL) {
-					isInsideEscape = false;
-					isInsideLinkEscape = false;
-				} else if (character === '\\' && index > 0 && characters[index - 1] === ANSI_ESCAPE) {
-					// ST terminator (ESC \)
+				if (
+					character === ANSI_ESCAPE_BELL
+					|| (character === '\\' && index > 0 && characters[index - 1] === ANSI_ESCAPE) // ST terminator (ESC \)
+				) {
 					isInsideEscape = false;
 					isInsideLinkEscape = false;
 				}
@@ -77,7 +76,7 @@ const wrapWord = (rows, word, columns) => {
 	}
 
 	// It's possible that the last row we copy over is only
-	// ansi escape characters, handle this edge-case
+	// ANSI escape characters, handle this edge-case
 	if (!visible && rows.at(-1).length > 0 && rows.length > 1) {
 		rows[rows.length - 2] += rows.pop();
 	}
@@ -142,7 +141,7 @@ const exec = (string, columns, options = {}) => {
 
 		// In 'hard' wrap mode, the length of a line is never allowed to extend past 'columns'
 		if (options.hard && lengths[index] > columns) {
-			const remainingColumns = (columns - rowLength);
+			const remainingColumns = columns - rowLength;
 			const breaksStartingThisLine = 1 + Math.floor((lengths[index] - remainingColumns - 1) / columns);
 			const breaksStartingNextLine = Math.floor((lengths[index] - 1) / columns);
 			if (breaksStartingNextLine < breaksStartingThisLine) {
@@ -186,7 +185,7 @@ const exec = (string, columns, options = {}) => {
 		if (character === ANSI_ESCAPE && pre[index + 1] !== '\\') {
 			const {groups} = ANSI_ESCAPE_REGEX.exec(preString.slice(preStringIndex)) || {groups: {}};
 			if (groups.code !== undefined) {
-				const code = Number.parseFloat(groups.code);
+				const code = Number.parseInt(groups.code, 10);
 				escapeCode = code === END_CODE ? undefined : code;
 			} else if (groups.uri !== undefined) {
 				escapeUrl = groups.uri.length === 0 ? undefined : groups.uri;
@@ -194,7 +193,7 @@ const exec = (string, columns, options = {}) => {
 		} else if (character === ANSI_ESCAPE_CSI) {
 			const {groups} = ANSI_ESCAPE_CSI_REGEX.exec(preString.slice(preStringIndex)) || {groups: {}};
 			if (groups.code !== undefined) {
-				const code = Number.parseFloat(groups.code);
+				const code = Number.parseInt(groups.code, 10);
 				escapeCode = code === END_CODE ? undefined : code;
 			}
 		}
