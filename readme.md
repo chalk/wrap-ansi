@@ -36,6 +36,8 @@ A string with ANSI escape codes, like one styled by [`chalk`](https://github.com
 
 Newline characters will be normalized to `\n`.
 
+Tab characters are expanded to spaces using 8-column tab stops before wrapping.
+
 #### columns
 
 Type: `number`

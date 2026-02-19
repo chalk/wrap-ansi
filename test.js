@@ -403,3 +403,18 @@ test('#39, normalizes newlines', t => {
 	t.is(wrapAnsi('foobar\r\nfoobar\r\nfoobar\nfoobar', 3, {hard: true}), 'foo\nbar\nfoo\nbar\nfoo\nbar\nfoo\nbar');
 	t.is(wrapAnsi('foo bar\r\nfoo bar\r\nfoo bar\nfoo bar', 3), 'foo\nbar\nfoo\nbar\nfoo\nbar\nfoo\nbar');
 });
+
+test('#54, expands tabs before wrapping', t => {
+	const result = wrapAnsi('\t\t\t\ttestingtesting', 10, {hard: true, trim: false});
+	t.is(result, '          \n          \n          \n  testingt\nesting');
+});
+
+test('#54, uses tab stops while expanding tabs', t => {
+	const result = wrapAnsi('1234\ttest', 10, {hard: true, trim: false});
+	t.is(result, '1234    \ntest');
+});
+
+test('#54, tab expansion ignores ANSI codes when computing column position', t => {
+	const result = wrapAnsi(chalk.red('ab') + '\tcd', 20);
+	t.is(stripAnsi(result), 'ab      cd');
+});

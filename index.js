@@ -30,6 +30,7 @@ ANSI_SGR_MODIFIER_CLOSE_CODES.delete(ANSI_SGR_RESET);
 
 const segmenter = new Intl.Segmenter();
 const getGraphemes = string => Array.from(segmenter.segment(string), ({segment}) => segment);
+const TAB_SIZE = 8;
 
 const wrapAnsiCode = code => `${ANSI_ESCAPE}${ANSI_CSI}${code}${ANSI_SGR_TERMINATOR}`;
 const wrapAnsiHyperlink = url => `${ANSI_ESCAPE}${ANSI_ESCAPE_LINK}${url}${ANSI_ESCAPE_BELL}`;
@@ -317,6 +318,29 @@ const stringVisibleTrimSpacesRight = string => {
 	return words.slice(0, last).join(' ') + words.slice(last).join('');
 };
 
+const expandTabs = line => {
+	if (!line.includes('\t')) {
+		return line;
+	}
+
+	const segments = line.split('\t');
+	let visible = 0;
+	let expandedLine = '';
+
+	for (const [index, segment] of segments.entries()) {
+		expandedLine += segment;
+		visible += stringWidth(segment);
+
+		if (index < segments.length - 1) {
+			const spaces = TAB_SIZE - (visible % TAB_SIZE);
+			expandedLine += ' '.repeat(spaces);
+			visible += spaces;
+		}
+	}
+
+	return expandedLine;
+};
+
 // The wrap-ansi module can be invoked in either 'hard' or 'soft' wrap mode.
 //
 // 'hard' will never allow a string to take up more than columns characters.
@@ -439,6 +463,6 @@ export default function wrapAnsi(string, columns, options) {
 		.normalize()
 		.replaceAll('\r\n', '\n')
 		.split('\n')
-		.map(line => exec(line, columns, options))
+		.map(line => exec(expandTabs(line), columns, options))
 		.join('\n');
 }
