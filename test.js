@@ -31,7 +31,7 @@ test('wraps string at 30 characters', t => {
 test('does not break strings longer than "cols" characters', t => {
 	const result = wrapAnsi(fixture, 5, {hard: false});
 
-	t.is(result, 'The\nquick\nbrown\n\u001B[31mfox\u001B[39m\n\u001B[31mjumped\u001B[39m\n\u001B[31mover\u001B[39m\n\u001B[31m\u001B[39mthe\nlazy\n\u001B[32mdog\u001B[39m\n\u001B[32mand\u001B[39m\n\u001B[32mthen\u001B[39m\n\u001B[32mran\u001B[39m\n\u001B[32maway\u001B[39m\n\u001B[32mwith\u001B[39m\n\u001B[32mthe\u001B[39m\n\u001B[32municorn.\u001B[39m');
+	t.is(result, 'The\nquick\nbrown\n\u001B[31mfox\u001B[39m\n\u001B[31mjumped\u001B[39m\n\u001B[31mover\u001B[39m\n\u001B[39mthe\nlazy\n\u001B[32mdog\u001B[39m\n\u001B[32mand\u001B[39m\n\u001B[32mthen\u001B[39m\n\u001B[32mran\u001B[39m\n\u001B[32maway\u001B[39m\n\u001B[32mwith\u001B[39m\n\u001B[32mthe\u001B[39m\n\u001B[32municorn.\u001B[39m');
 	t.true(stripAnsi(result).split('\n').some(line => line.length > 5));
 });
 
@@ -53,7 +53,7 @@ test('does not prepend newline if first string is greater than "cols"', t => {
 test('breaks strings longer than "cols" characters', t => {
 	const result = wrapAnsi(fixture, 5, {hard: true});
 
-	t.is(result, 'The\nquick\nbrown\n\u001B[31mfox j\u001B[39m\n\u001B[31mumped\u001B[39m\n\u001B[31mover\u001B[39m\n\u001B[31m\u001B[39mthe\nlazy\n\u001B[32mdog\u001B[39m\n\u001B[32mand\u001B[39m\n\u001B[32mthen\u001B[39m\n\u001B[32mran\u001B[39m\n\u001B[32maway\u001B[39m\n\u001B[32mwith\u001B[39m\n\u001B[32mthe\u001B[39m\n\u001B[32munico\u001B[39m\n\u001B[32mrn.\u001B[39m');
+	t.is(result, 'The\nquick\nbrown\n\u001B[31mfox j\u001B[39m\n\u001B[31mumped\u001B[39m\n\u001B[31mover\u001B[39m\n\u001B[39mthe\nlazy\n\u001B[32mdog\u001B[39m\n\u001B[32mand\u001B[39m\n\u001B[32mthen\u001B[39m\n\u001B[32mran\u001B[39m\n\u001B[32maway\u001B[39m\n\u001B[32mwith\u001B[39m\n\u001B[32mthe\u001B[39m\n\u001B[32munico\u001B[39m\n\u001B[32mrn.\u001B[39m');
 	t.true(stripAnsi(result).split('\n').every(line => line.length <= 5));
 });
 
@@ -97,7 +97,7 @@ test('no word-wrapping', t => {
 	t.is(result3, '12345\n678\n');
 
 	const result4 = wrapAnsi(fixture, 5, {wordWrap: false});
-	t.is(result4, 'The q\nuick\nbrown\n\u001B[31mfox j\u001B[39m\n\u001B[31mumped\u001B[39m\n\u001B[31mover\u001B[39m\n\u001B[31m\u001B[39mthe l\nazy \u001B[32md\u001B[39m\n\u001B[32mog an\u001B[39m\n\u001B[32md the\u001B[39m\n\u001B[32mn ran\u001B[39m\n\u001B[32maway\u001B[39m\n\u001B[32mwith\u001B[39m\n\u001B[32mthe u\u001B[39m\n\u001B[32mnicor\u001B[39m\n\u001B[32mn.\u001B[39m');
+	t.is(result4, 'The q\nuick\nbrown\n\u001B[31mfox j\u001B[39m\n\u001B[31mumped\u001B[39m\n\u001B[31mover\u001B[39m\n\u001B[39mthe l\nazy \u001B[32md\u001B[39m\n\u001B[32mog an\u001B[39m\n\u001B[32md the\u001B[39m\n\u001B[32mn ran\u001B[39m\n\u001B[32maway\u001B[39m\n\u001B[32mwith\u001B[39m\n\u001B[32mthe u\u001B[39m\n\u001B[32mnicor\u001B[39m\n\u001B[32mn.\u001B[39m');
 });
 
 test('no word-wrapping and no trimming', t => {
@@ -111,7 +111,7 @@ test('no word-wrapping and no trimming', t => {
 	t.is(result3, '12345\n678\n ');
 
 	const result4 = wrapAnsi(fixture, 5, {wordWrap: false, trim: false});
-	t.is(result4, 'The q\nuick \nbrown\n \u001B[31mfox \u001B[39m\n[31mjumpe[39m\n[31md ove[39m\n[31mr \u001B[39mthe\n lazy\n \u001B[32mdog \u001B[39m\n[32mand t[39m\n[32mhen r[39m\n[32man aw[39m\n[32may wi[39m\n[32mth th[39m\n[32me uni[39m\n[32mcorn.\u001B[39m');
+	t.is(result4, 'The q\nuick \nbrown\n \u001B[31mfox \u001B[39m\n\u001B[31mjumpe\u001B[39m\n\u001B[31md ove\u001B[39m\n\u001B[31mr \u001B[39mthe\n lazy\n \u001B[32mdog \u001B[39m\n\u001B[32mand t\u001B[39m\n\u001B[32mhen r\u001B[39m\n\u001B[32man aw\u001B[39m\n\u001B[32may wi\u001B[39m\n\u001B[32mth th\u001B[39m\n\u001B[32me uni\u001B[39m\n\u001B[32mcorn.\u001B[39m');
 });
 
 test('supports fullwidth characters', t => {
@@ -176,7 +176,7 @@ test('#25, properly wraps whitespace between words with no trimming', t => {
 	t.is(wrapAnsi('foo bar', 3, {trim: false, hard: true}), 'foo\n \nbar');
 });
 
-test('#26, does not multiplicate leading spaces with no trimming', t => {
+test('#26, does not multiply leading spaces with no trimming', t => {
 	t.is(wrapAnsi(' a ', 10, {trim: false}), ' a ');
 	t.is(wrapAnsi('   a ', 10, {trim: false}), '   a ');
 });
@@ -185,6 +185,109 @@ test('#27, does not remove spaces in line with ansi escapes when no trimming', t
 	t.is(wrapAnsi(chalk.bgGreen(` ${chalk.black('OK')} `), 100, {trim: false}), chalk.bgGreen(` ${chalk.black('OK')} `));
 	t.is(wrapAnsi(chalk.bgGreen(`  ${chalk.black('OK')} `), 100, {trim: false}), chalk.bgGreen(`  ${chalk.black('OK')} `));
 	t.is(wrapAnsi(chalk.bgGreen(' hello '), 10, {hard: true, trim: false}), chalk.bgGreen(' hello '));
+});
+
+test('#43, preserves nested foreground and background styles on every wrapped line', t => {
+	const result = wrapAnsi(chalk.bgGreen.black('test'), 2, {hard: true, trim: false, wordWrap: false});
+	t.is(result, '\u001B[42m\u001B[30mte\u001B[39m\u001B[49m\n\u001B[42m\u001B[30mst\u001B[39m\u001B[49m');
+});
+
+test('#43, preserves stacked modifiers and colors on every wrapped line', t => {
+	const result = wrapAnsi(chalk.blue.bold('test'), 2, {hard: true, trim: false, wordWrap: false});
+	t.is(result, '\u001B[34m\u001B[1mte\u001B[22m\u001B[39m\n\u001B[34m\u001B[1mst\u001B[22m\u001B[39m');
+});
+
+test('#43, preserves combined SGR parameters across wrapped lines', t => {
+	const input = '\u001B[1;34mtest\u001B[39;22m';
+	const result = wrapAnsi(input, 2, {hard: true, trim: false, wordWrap: false});
+	t.is(result, '\u001B[1;34mte\u001B[39m\u001B[22m\n\u001B[1m\u001B[34mst\u001B[39;22m');
+});
+
+test('#43, preserves truecolor foreground and background styles on every wrapped line', t => {
+	const input = '\u001B[48;2;255;0;0m\u001B[38;2;0;0;0mtest\u001B[39m\u001B[49m';
+	const result = wrapAnsi(input, 2, {hard: true, trim: false, wordWrap: false});
+	t.is(result, '\u001B[48;2;255;0;0m\u001B[38;2;0;0;0mte\u001B[39m\u001B[49m\n\u001B[48;2;255;0;0m\u001B[38;2;0;0;0mst\u001B[39m\u001B[49m');
+});
+
+test('#43, does not treat malformed extended color parameters as modifiers', t => {
+	const malformedForeground = wrapAnsi('\u001B[38;2;255mab\u001B[0m', 1, {hard: true, trim: false, wordWrap: false});
+	const malformedBackground = wrapAnsi('\u001B[48;5mab\u001B[0m', 1, {hard: true, trim: false, wordWrap: false});
+	t.is(malformedForeground, '\u001B[38;2;255ma\nb\u001B[0m');
+	t.is(malformedBackground, '\u001B[48;5ma\nb\u001B[0m');
+});
+
+test('#43, treats omitted SGR params as reset', t => {
+	const colorThenReset = wrapAnsi('\u001B[31;mab\u001B[0m', 1, {hard: true, trim: false, wordWrap: false});
+	const boldResetThenColor = wrapAnsi('\u001B[1;;31mab\u001B[0m', 1, {hard: true, trim: false, wordWrap: false});
+	t.is(colorThenReset, '\u001B[31;ma\nb\u001B[0m');
+	t.is(boldResetThenColor, '\u001B[1;;31ma\u001B[39m\n\u001B[31mb\u001B[0m');
+});
+
+test('#43, preserves C1 CSI SGR styles across wrapped lines', t => {
+	const result = wrapAnsi('\u009B1;34mtest\u009B39;22m', 2, {hard: true, trim: false, wordWrap: false});
+	t.is(result, '\u009B1;34mte\u001B[39m\u001B[22m\n\u001B[1m\u001B[34mst\u009B39;22m');
+});
+
+test('#43, preserves underline color SGR styles across wrapped lines', t => {
+	const result = wrapAnsi('\u001B[58;5;196mtest\u001B[59m', 2, {hard: true, trim: false, wordWrap: false});
+	t.is(result, '\u001B[58;5;196mte\u001B[59m\n\u001B[58;5;196mst\u001B[59m');
+});
+
+test('#43, preserves bold and dim styles across wrapped lines', t => {
+	const result = wrapAnsi('\u001B[1m\u001B[2mtest\u001B[22m', 2, {hard: true, trim: false, wordWrap: false});
+	t.is(result, '\u001B[1m\u001B[2mte\u001B[22m\u001B[22m\n\u001B[1m\u001B[2mst\u001B[22m');
+});
+
+test('#43, clears both bold and dim when reset 22 appears at wrapped line start', t => {
+	const result = wrapAnsi('\u001B[1m\u001B[2mab\u001B[22mcd', 1, {hard: true, trim: false, wordWrap: false});
+	t.is(result, '\u001B[1m\u001B[2ma\u001B[22m\u001B[22m\n\u001B[1m\u001B[2mb\u001B[22m\u001B[22m\n\u001B[22mc\nd');
+});
+
+test('#43, does not reopen styles that are reset by a combined SGR sequence at wrapped line start', t => {
+	const result = wrapAnsi('\u001B[1;2;31mab\u001B[22;39mcd', 1, {hard: true, trim: false, wordWrap: false});
+	t.is(result, '\u001B[1;2;31ma\u001B[39m\u001B[22m\u001B[22m\n\u001B[1m\u001B[2m\u001B[31mb\u001B[39m\u001B[22m\u001B[22m\n\u001B[22;39mc\nd');
+});
+
+test('#43, handles C1 SGR reset at wrapped line start for stacked modifiers', t => {
+	const result = wrapAnsi('\u009B1m\u009B2mab\u009B22mcd', 1, {hard: true, trim: false, wordWrap: false});
+	t.is(result, '\u009B1m\u009B2ma\u001B[22m\u001B[22m\n\u001B[1m\u001B[2mb\u001B[22m\u001B[22m\n\u009B22mc\nd');
+});
+
+test('#43, does not duplicate reopen output when the same modifier is applied repeatedly', t => {
+	const result = wrapAnsi('\u001B[1m\u001B[1mtest\u001B[22m', 2, {hard: true, trim: false, wordWrap: false});
+	t.is(result, '\u001B[1m\u001B[1mte\u001B[22m\n\u001B[1mst\u001B[22m');
+});
+
+test('#43, does not reopen modifiers that are immediately reset at wrapped line start', t => {
+	const result = wrapAnsi('\u001B[1mab\u001B[22mcd', 1, {hard: true, trim: false, wordWrap: false});
+	t.is(result, '\u001B[1ma\u001B[22m\n\u001B[1mb\u001B[22m\n\u001B[22mc\nd');
+});
+
+test('#43, does not reopen colors that are immediately reset at wrapped line start', t => {
+	const result = wrapAnsi('\u001B[31mab\u001B[39mcd', 1, {hard: true, trim: false, wordWrap: false});
+	t.is(result, '\u001B[31ma\u001B[39m\n\u001B[31mb\u001B[39m\n\u001B[39mc\nd');
+});
+
+test('#43, does not reopen background when reset at wrapped line start while preserving foreground', t => {
+	const result = wrapAnsi('\u001B[31m\u001B[42mab\u001B[49mcd', 1, {hard: true, trim: false, wordWrap: false});
+	t.is(result, '\u001B[31m\u001B[42ma\u001B[49m\u001B[39m\n\u001B[31m\u001B[42mb\u001B[49m\u001B[39m\n\u001B[31m\u001B[49mc\u001B[39m\n\u001B[31md');
+});
+
+test('#43, does not reopen non-22 modifiers that are immediately reset at wrapped line start', t => {
+	const result = wrapAnsi('\u001B[9mab\u001B[29mcd', 1, {hard: true, trim: false, wordWrap: false});
+	t.is(result, '\u001B[9ma\u001B[29m\n\u001B[9mb\u001B[29m\n\u001B[29mc\nd');
+});
+
+test('#43, does not reopen styles reset after a leading hyperlink escape at wrapped line start', t => {
+	const belResult = wrapAnsi('\u001B[31mab\u001B]8;;https://example.com\u0007\u001B[39mc\u001B]8;;\u0007', 1, {hard: true, trim: false, wordWrap: false});
+	const stResult = wrapAnsi('\u001B[31mab\u001B]8;;https://example.com\u001B\\\u001B[39mc\u001B]8;;\u001B\\', 1, {hard: true, trim: false, wordWrap: false});
+	t.is(belResult, '\u001B[31ma\u001B[39m\n\u001B[31mb\u001B[39m\n\u001B]8;;https://example.com\u0007\u001B[39mc\u001B]8;;\u0007');
+	t.is(stResult, '\u001B[31ma\u001B[39m\n\u001B[31mb\u001B[39m\n\u001B]8;;https://example.com\u001B\\\u001B[39mc\u001B]8;;\u001B\\');
+});
+
+test('#43, does not reopen styles when a full reset is immediately applied at wrapped line start', t => {
+	const result = wrapAnsi('\u001B[31;1mab\u001B[0mcd', 1, {hard: true, trim: false, wordWrap: false});
+	t.is(result, '\u001B[31;1ma\u001B[22m\u001B[39m\n\u001B[31m\u001B[1mb\u001B[22m\u001B[39m\n\u001B[0mc\nd');
 });
 
 test('#35, wraps hyperlinks, preserving clickability in supporting terminals', t => {

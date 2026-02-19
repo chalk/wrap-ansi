@@ -9,20 +9,232 @@ const ESCAPES = new Set([
 	ANSI_ESCAPE_CSI,
 ]);
 
-const END_CODE = 39;
 const ANSI_ESCAPE_BELL = '\u0007';
 const ANSI_CSI = '[';
 const ANSI_OSC = ']';
 const ANSI_SGR_TERMINATOR = 'm';
+const ANSI_SGR_RESET = 0;
+const ANSI_SGR_RESET_FOREGROUND = 39;
+const ANSI_SGR_RESET_BACKGROUND = 49;
+const ANSI_SGR_RESET_UNDERLINE_COLOR = 59;
+const ANSI_SGR_FOREGROUND_EXTENDED = 38;
+const ANSI_SGR_BACKGROUND_EXTENDED = 48;
+const ANSI_SGR_UNDERLINE_COLOR_EXTENDED = 58;
+const ANSI_SGR_COLOR_MODE_256 = 5;
+const ANSI_SGR_COLOR_MODE_RGB = 2;
 const ANSI_ESCAPE_LINK = `${ANSI_OSC}8;;`;
-const ANSI_ESCAPE_REGEX = new RegExp(`^\\u001B(?:\\${ANSI_CSI}(?<code>\\d+)${ANSI_SGR_TERMINATOR}|${ANSI_ESCAPE_LINK}(?<uri>[^\\u0007\\u001B]*)(?:\\u0007|\\u001B\\\\))`);
-const ANSI_ESCAPE_CSI_REGEX = new RegExp(`^\\u009B(?<code>\\d+)${ANSI_SGR_TERMINATOR}`);
+const ANSI_ESCAPE_REGEX = new RegExp(`^\\u001B(?:\\${ANSI_CSI}(?<sgr>[0-9;]*)${ANSI_SGR_TERMINATOR}|${ANSI_ESCAPE_LINK}(?<uri>[^\\u0007\\u001B]*)(?:\\u0007|\\u001B\\\\))`);
+const ANSI_ESCAPE_CSI_REGEX = new RegExp(`^\\u009B(?<sgr>[0-9;]*)${ANSI_SGR_TERMINATOR}`);
+const ANSI_SGR_MODIFIER_CLOSE_CODES = new Set(ansiStyles.codes.values());
+ANSI_SGR_MODIFIER_CLOSE_CODES.delete(ANSI_SGR_RESET);
 
 const segmenter = new Intl.Segmenter();
 const getGraphemes = string => Array.from(segmenter.segment(string), ({segment}) => segment);
 
 const wrapAnsiCode = code => `${ANSI_ESCAPE}${ANSI_CSI}${code}${ANSI_SGR_TERMINATOR}`;
 const wrapAnsiHyperlink = url => `${ANSI_ESCAPE}${ANSI_ESCAPE_LINK}${url}${ANSI_ESCAPE_BELL}`;
+
+const getSgrTokens = sgrParameters => {
+	const codes = sgrParameters.split(';').map(sgrParameter => sgrParameter === '' ? ANSI_SGR_RESET : Number.parseInt(sgrParameter, 10));
+	const sgrTokens = [];
+
+	for (let index = 0; index < codes.length; index++) {
+		const code = codes[index];
+
+		if (!Number.isFinite(code)) {
+			continue;
+		}
+
+		if (
+			(
+				code === ANSI_SGR_FOREGROUND_EXTENDED
+				|| code === ANSI_SGR_BACKGROUND_EXTENDED
+				|| code === ANSI_SGR_UNDERLINE_COLOR_EXTENDED
+			)
+		) {
+			if (index + 1 >= codes.length) {
+				break;
+			}
+
+			const mode = codes[index + 1];
+
+			if (mode === ANSI_SGR_COLOR_MODE_256 && Number.isFinite(codes[index + 2])) {
+				sgrTokens.push([code, mode, codes[index + 2]]);
+				index += 2;
+				continue;
+			}
+
+			const red = codes[index + 2];
+			const green = codes[index + 3];
+			const blue = codes[index + 4];
+			if (
+				mode === ANSI_SGR_COLOR_MODE_RGB
+				&& Number.isFinite(red)
+				&& Number.isFinite(green)
+				&& Number.isFinite(blue)
+			) {
+				sgrTokens.push([code, mode, red, green, blue]);
+				index += 4;
+				continue;
+			}
+
+			break;
+		}
+
+		sgrTokens.push([code]);
+	}
+
+	return sgrTokens;
+};
+
+const removeActiveStyle = (activeStyles, family) => {
+	const activeStyleIndex = activeStyles.findIndex(activeStyle => activeStyle.family === family);
+
+	if (activeStyleIndex !== -1) {
+		activeStyles.splice(activeStyleIndex, 1);
+	}
+};
+
+const upsertActiveStyle = (activeStyles, nextActiveStyle) => {
+	removeActiveStyle(activeStyles, nextActiveStyle.family);
+	activeStyles.push(nextActiveStyle);
+};
+
+const removeModifierStylesByClose = (activeStyles, closeCode) => {
+	for (let index = activeStyles.length - 1; index >= 0; index--) {
+		const activeStyle = activeStyles[index];
+		if (activeStyle.family.startsWith('modifier-') && activeStyle.close === closeCode) {
+			activeStyles.splice(index, 1);
+		}
+	}
+};
+
+const getColorStyle = (code, sgrToken) => {
+	if ((code >= 30 && code <= 37) || (code >= 90 && code <= 97) || (code === ANSI_SGR_FOREGROUND_EXTENDED && sgrToken.length > 1)) {
+		return {
+			family: 'foreground',
+			open: sgrToken.join(';'),
+			close: ANSI_SGR_RESET_FOREGROUND,
+		};
+	}
+
+	if ((code >= 40 && code <= 47) || (code >= 100 && code <= 107) || (code === ANSI_SGR_BACKGROUND_EXTENDED && sgrToken.length > 1)) {
+		return {
+			family: 'background',
+			open: sgrToken.join(';'),
+			close: ANSI_SGR_RESET_BACKGROUND,
+		};
+	}
+
+	if (code === ANSI_SGR_UNDERLINE_COLOR_EXTENDED && sgrToken.length > 1) {
+		return {
+			family: 'underlineColor',
+			open: sgrToken.join(';'),
+			close: ANSI_SGR_RESET_UNDERLINE_COLOR,
+		};
+	}
+};
+
+const applySgrResetCode = (code, activeStyles) => {
+	if (code === ANSI_SGR_RESET) {
+		activeStyles.length = 0;
+		return true;
+	}
+
+	if (code === ANSI_SGR_RESET_FOREGROUND) {
+		removeActiveStyle(activeStyles, 'foreground');
+		return true;
+	}
+
+	if (code === ANSI_SGR_RESET_BACKGROUND) {
+		removeActiveStyle(activeStyles, 'background');
+		return true;
+	}
+
+	if (code === ANSI_SGR_RESET_UNDERLINE_COLOR) {
+		removeActiveStyle(activeStyles, 'underlineColor');
+		return true;
+	}
+
+	if (ANSI_SGR_MODIFIER_CLOSE_CODES.has(code)) {
+		removeModifierStylesByClose(activeStyles, code);
+		return true;
+	}
+
+	return false;
+};
+
+const applySgrToken = (sgrToken, activeStyles) => {
+	const [code] = sgrToken;
+
+	if (applySgrResetCode(code, activeStyles)) {
+		return;
+	}
+
+	const colorStyle = getColorStyle(code, sgrToken);
+	if (colorStyle) {
+		upsertActiveStyle(activeStyles, colorStyle);
+		return;
+	}
+
+	const close = ansiStyles.codes.get(code);
+	if (close !== undefined && close !== ANSI_SGR_RESET) {
+		upsertActiveStyle(activeStyles, {
+			family: `modifier-${code}`,
+			open: sgrToken.join(';'),
+			close,
+		});
+	}
+};
+
+const applySgrParameters = (sgrParameters, activeStyles) => {
+	for (const sgrToken of getSgrTokens(sgrParameters)) {
+		applySgrToken(sgrToken, activeStyles);
+	}
+};
+
+const applySgrResets = (sgrParameters, activeStyles) => {
+	for (const sgrToken of getSgrTokens(sgrParameters)) {
+		const [code] = sgrToken;
+		applySgrResetCode(code, activeStyles);
+	}
+};
+
+const applyLeadingSgrResets = (string, activeStyles) => {
+	let remainder = string;
+
+	while (remainder.length > 0) {
+		if (remainder.startsWith(ANSI_ESCAPE) && remainder[1] !== '\\') {
+			const match = ANSI_ESCAPE_REGEX.exec(remainder);
+			if (!match) {
+				break;
+			}
+
+			if (match.groups.sgr !== undefined) {
+				applySgrResets(match.groups.sgr, activeStyles);
+			}
+
+			remainder = remainder.slice(match[0].length);
+			continue;
+		}
+
+		if (remainder.startsWith(ANSI_ESCAPE_CSI)) {
+			const match = ANSI_ESCAPE_CSI_REGEX.exec(remainder);
+			if (!match || match.groups.sgr === undefined) {
+				break;
+			}
+
+			applySgrResets(match.groups.sgr, activeStyles);
+			remainder = remainder.slice(match[0].length);
+			continue;
+		}
+
+		break;
+	}
+};
+
+const getClosingSgrSequence = activeStyles => [...activeStyles].reverse().map(activeStyle => wrapAnsiCode(activeStyle.close)).join('');
+const getOpeningSgrSequence = activeStyles => activeStyles.map(activeStyle => wrapAnsiCode(activeStyle.open)).join('');
 
 // Calculate the length of words split on ' ', ignoring
 // the extra characters added by ANSI escape codes
@@ -116,8 +328,8 @@ const exec = (string, columns, options = {}) => {
 	}
 
 	let returnValue = '';
-	let escapeCode;
 	let escapeUrl;
+	const activeStyles = [];
 
 	const lengths = wordLengths(string);
 	let rows = [''];
@@ -187,34 +399,28 @@ const exec = (string, columns, options = {}) => {
 
 		if (character === ANSI_ESCAPE && pre[index + 1] !== '\\') {
 			const {groups} = ANSI_ESCAPE_REGEX.exec(preString.slice(preStringIndex)) || {groups: {}};
-			if (groups.code !== undefined) {
-				const code = Number.parseInt(groups.code, 10);
-				escapeCode = code === END_CODE ? undefined : code;
+			if (groups.sgr !== undefined) {
+				applySgrParameters(groups.sgr, activeStyles);
 			} else if (groups.uri !== undefined) {
 				escapeUrl = groups.uri.length === 0 ? undefined : groups.uri;
 			}
 		} else if (character === ANSI_ESCAPE_CSI) {
 			const {groups} = ANSI_ESCAPE_CSI_REGEX.exec(preString.slice(preStringIndex)) || {groups: {}};
-			if (groups.code !== undefined) {
-				const code = Number.parseInt(groups.code, 10);
-				escapeCode = code === END_CODE ? undefined : code;
+			if (groups.sgr !== undefined) {
+				applySgrParameters(groups.sgr, activeStyles);
 			}
 		}
-
-		const code = ansiStyles.codes.get(Number(escapeCode));
 
 		if (pre[index + 1] === '\n') {
 			if (escapeUrl) {
 				returnValue += wrapAnsiHyperlink('');
 			}
 
-			if (escapeCode && code) {
-				returnValue += wrapAnsiCode(code);
-			}
+			returnValue += getClosingSgrSequence(activeStyles);
 		} else if (character === '\n') {
-			if (escapeCode && code) {
-				returnValue += wrapAnsiCode(escapeCode);
-			}
+			const openingStyles = [...activeStyles];
+			applyLeadingSgrResets(preString.slice(preStringIndex + 1), openingStyles);
+			returnValue += getOpeningSgrSequence(openingStyles);
 
 			if (escapeUrl) {
 				returnValue += wrapAnsiHyperlink(escapeUrl);
