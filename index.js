@@ -2,9 +2,11 @@ import stringWidth from 'string-width';
 import stripAnsi from 'strip-ansi';
 import ansiStyles from 'ansi-styles';
 
+const ANSI_ESCAPE = '\u001B';
+const ANSI_ESCAPE_CSI = '\u009B';
 const ESCAPES = new Set([
-	'\u001B',
-	'\u009B',
+	ANSI_ESCAPE,
+	ANSI_ESCAPE_CSI,
 ]);
 
 const END_CODE = 39;
@@ -13,9 +15,11 @@ const ANSI_CSI = '[';
 const ANSI_OSC = ']';
 const ANSI_SGR_TERMINATOR = 'm';
 const ANSI_ESCAPE_LINK = `${ANSI_OSC}8;;`;
+const ANSI_ESCAPE_REGEX = new RegExp(`^\\u001B(?:\\${ANSI_CSI}(?<code>\\d+)${ANSI_SGR_TERMINATOR}|${ANSI_ESCAPE_LINK}(?<uri>[^\\u0007\\u001B]*)(?:\\u0007|\\u001B\\\\))`);
+const ANSI_ESCAPE_CSI_REGEX = new RegExp(`^\\u009B(?<code>\\d+)${ANSI_SGR_TERMINATOR}`);
 
-const wrapAnsiCode = code => `${ESCAPES.values().next().value}${ANSI_CSI}${code}${ANSI_SGR_TERMINATOR}`;
-const wrapAnsiHyperlink = url => `${ESCAPES.values().next().value}${ANSI_ESCAPE_LINK}${url}${ANSI_ESCAPE_BELL}`;
+const wrapAnsiCode = code => `${ANSI_ESCAPE}${ANSI_CSI}${code}${ANSI_SGR_TERMINATOR}`;
+const wrapAnsiHyperlink = url => `${ANSI_ESCAPE}${ANSI_ESCAPE_LINK}${url}${ANSI_ESCAPE_BELL}`;
 
 // Calculate the length of words split on ' ', ignoring
 // the extra characters added by ansi escape codes
@@ -40,7 +44,7 @@ const wrapWord = (rows, word, columns) => {
 			visible = 0;
 		}
 
-		if (ESCAPES.has(character)) {
+		if (ESCAPES.has(character) && !(isInsideLinkEscape && character === ANSI_ESCAPE && characters[index + 1] === '\\')) {
 			isInsideEscape = true;
 
 			const ansiEscapeLinkCandidate = characters.slice(index + 1, index + 1 + ANSI_ESCAPE_LINK.length).join('');
@@ -50,6 +54,10 @@ const wrapWord = (rows, word, columns) => {
 		if (isInsideEscape) {
 			if (isInsideLinkEscape) {
 				if (character === ANSI_ESCAPE_BELL) {
+					isInsideEscape = false;
+					isInsideLinkEscape = false;
+				} else if (character === '\\' && index > 0 && characters[index - 1] === ANSI_ESCAPE) {
+					// ST terminator (ESC \)
 					isInsideEscape = false;
 					isInsideLinkEscape = false;
 				}
@@ -175,13 +183,19 @@ const exec = (string, columns, options = {}) => {
 	for (const [index, character] of pre.entries()) {
 		returnValue += character;
 
-		if (ESCAPES.has(character)) {
-			const {groups} = new RegExp(`(?:\\${ANSI_CSI}(?<code>\\d+)m|\\${ANSI_ESCAPE_LINK}(?<uri>.*)${ANSI_ESCAPE_BELL})`).exec(preString.slice(preStringIndex)) || {groups: {}};
+		if (character === ANSI_ESCAPE && pre[index + 1] !== '\\') {
+			const {groups} = ANSI_ESCAPE_REGEX.exec(preString.slice(preStringIndex)) || {groups: {}};
 			if (groups.code !== undefined) {
 				const code = Number.parseFloat(groups.code);
 				escapeCode = code === END_CODE ? undefined : code;
 			} else if (groups.uri !== undefined) {
 				escapeUrl = groups.uri.length === 0 ? undefined : groups.uri;
+			}
+		} else if (character === ANSI_ESCAPE_CSI) {
+			const {groups} = ANSI_ESCAPE_CSI_REGEX.exec(preString.slice(preStringIndex)) || {groups: {}};
+			if (groups.code !== undefined) {
+				const code = Number.parseFloat(groups.code);
+				escapeCode = code === END_CODE ? undefined : code;
 			}
 		}
 

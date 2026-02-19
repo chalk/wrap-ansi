@@ -82,8 +82,8 @@ test('no word-wrapping', t => {
 	const result2 = wrapAnsi(fixture3, 5, {wordWrap: false});
 	t.is(result2, '12345\n678\n90123\n45678\n90 12\n345');
 
-	const rsult3 = wrapAnsi(fixture5, 5, {wordWrap: false});
-	t.is(rsult3, '12345\n678\n');
+	const result3 = wrapAnsi(fixture5, 5, {wordWrap: false});
+	t.is(result3, '12345\n678\n');
 
 	const result4 = wrapAnsi(fixture, 5, {wordWrap: false});
 	t.is(result4, 'The q\nuick\nbrown\n\u001B[31mfox j\u001B[39m\n\u001B[31mumped\u001B[39m\n\u001B[31mover\u001B[39m\n\u001B[31m\u001B[39mthe l\nazy \u001B[32md\u001B[39m\n\u001B[32mog an\u001B[39m\n\u001B[32md the\u001B[39m\n\u001B[32mn ran\u001B[39m\n\u001B[32maway\u001B[39m\n\u001B[32mwith\u001B[39m\n\u001B[32mthe u\u001B[39m\n\u001B[32mnicor\u001B[39m\n\u001B[32mn.\u001B[39m');
@@ -154,6 +154,102 @@ test('#35, wraps hyperlinks, preserving clickability in supporting terminals', t
 
 	const result2 = wrapAnsi(`Check out \u001B]8;;https://www.example.com\u0007my \uD83C\uDE00 ${chalk.bgGreen('website')}\u001B]8;;\u0007, it ${chalk.bgRed('is \u001B]8;;https://www.example.com\u0007super\uD83C\uDE00califragilisticexpialidocious\u001B]8;;\u0007')}.`, 16, {hard: true});
 	t.is(result2, 'Check out \u001B]8;;https://www.example.com\u0007my 🈀\u001B]8;;\u0007\n\u001B]8;;https://www.example.com\u0007\u001B[42mwebsite\u001B[49m\u001B]8;;\u0007, it \u001B[41mis\u001B[49m\n\u001B[41m\u001B]8;;https://www.example.com\u0007super🈀califragi\u001B]8;;\u0007\u001B[49m\n\u001B[41m\u001B]8;;https://www.example.com\u0007listicexpialidoc\u001B]8;;\u0007\u001B[49m\n\u001B[41m\u001B]8;;https://www.example.com\u0007ious\u001B]8;;\u0007\u001B[49m.');
+});
+
+test('wraps ST-terminated hyperlinks correctly', t => {
+	// Single word wider than columns, forcing hard wrap through wrapWord.
+	const result = wrapAnsi('\u001B]8;;https://example.com\u001B\\abcdefghij\u001B]8;;\u001B\\', 5, {hard: true});
+	t.is(result, '\u001B]8;;https://example.com\u001B\\abcde\u001B]8;;\u0007\n\u001B]8;;https://example.com\u0007fghij\u001B]8;;\u001B\\');
+
+	// Soft wrap - 10-char visible text should fit in 20 columns without wrapping
+	const result2 = wrapAnsi('\u001B]8;;https://example.com\u001B\\Click here\u001B]8;;\u001B\\', 20);
+	t.false(result2.includes('\n'));
+	t.true(result2.includes('\u001B]8;;https://example.com\u001B\\'));
+
+	// Soft wrap that straddles a line break - hyperlink should be closed/reopened
+	const result3 = wrapAnsi('\u001B]8;;https://example.com\u001B\\hello world\u001B]8;;\u001B\\', 5);
+	const lines = result3.split('\n');
+	t.is(lines.length, 2);
+	t.is(stripAnsi(lines[0]), 'hello');
+	t.is(stripAnsi(lines[1]), 'world');
+	// Each line should have the hyperlink open and close tags
+	t.true(lines[0].includes('\u001B]8;;https://example.com'));
+	t.true(lines[1].includes('\u001B]8;;https://example.com'));
+
+	// Mixed BEL and ST terminators in same string
+	const result4 = wrapAnsi(
+		'\u001B]8;;https://a.com\u0007hello\u001B]8;;\u0007 \u001B]8;;https://b.com\u001B\\world\u001B]8;;\u001B\\',
+		20,
+	);
+	t.false(result4.includes('\n'));
+});
+
+test('does not mix URLs when wrapping multiple BEL-terminated hyperlinks', t => {
+	const result = wrapAnsi('\u001B]8;;https://a.com\u0007one\u001B]8;;\u0007 \u001B]8;;https://b.com\u0007twothree\u001B]8;;\u0007', 4, {hard: true});
+	const lines = result.split('\n');
+	t.deepEqual(lines.map(line => stripAnsi(line)), ['one', 'twot', 'hree']);
+	t.true(lines[0].includes('https://a.com'));
+	t.false(lines[0].includes('https://b.com'));
+	t.true(lines[1].includes('https://b.com'));
+	t.false(lines[1].includes('https://a.com'));
+	t.true(lines[2].includes('https://b.com'));
+	t.false(lines[2].includes('https://a.com'));
+});
+
+test('does not mix URLs when wrapping multiple ST-terminated hyperlinks', t => {
+	const result = wrapAnsi('\u001B]8;;https://a.com\u001B\\one\u001B]8;;\u001B\\ \u001B]8;;https://b.com\u001B\\twothree\u001B]8;;\u001B\\', 4, {hard: true});
+	const lines = result.split('\n');
+	t.deepEqual(lines.map(line => stripAnsi(line)), ['one', 'twot', 'hree']);
+	t.true(lines[0].includes('https://a.com'));
+	t.false(lines[0].includes('https://b.com'));
+	t.true(lines[1].includes('https://b.com'));
+	t.false(lines[1].includes('https://a.com'));
+	t.true(lines[2].includes('https://b.com'));
+	t.false(lines[2].includes('https://a.com'));
+});
+
+test('does not scan ahead to a later BEL hyperlink from an invalid escape', t => {
+	const result = wrapAnsi('\u001Bfoo abc \u001B]8;;https://ok.com\u0007ok\u001B]8;;\u0007', 4, {hard: true});
+	const lines = result.split('\n');
+	const abcLine = lines.find(line => stripAnsi(line).includes('abc'));
+	const okLine = lines.find(line => stripAnsi(line).includes('ok'));
+	t.truthy(abcLine);
+	t.truthy(okLine);
+	t.false(abcLine.includes('https://ok.com'));
+	t.true(okLine.includes('https://ok.com'));
+});
+
+test('does not scan ahead to a later ST hyperlink from an invalid escape', t => {
+	const result = wrapAnsi('\u001Bfoo abc \u001B]8;;https://ok.com\u001B\\ok\u001B]8;;\u001B\\', 4, {hard: true});
+	const lines = result.split('\n');
+	const abcLine = lines.find(line => stripAnsi(line).includes('abc'));
+	const okLine = lines.find(line => stripAnsi(line).includes('ok'));
+	t.truthy(abcLine);
+	t.truthy(okLine);
+	t.false(abcLine.includes('https://ok.com'));
+	t.true(okLine.includes('https://ok.com'));
+});
+
+test('does not scan ahead from an unterminated OSC prelude to a later BEL hyperlink', t => {
+	const result = wrapAnsi('\u001B]8;;unterminated abc \u001B]8;;https://ok.com\u0007ok\u001B]8;;\u0007', 5, {hard: true});
+	const lines = result.split('\n');
+	const abcLine = lines.find(line => stripAnsi(line).includes('abc'));
+	const okLine = lines.find(line => stripAnsi(line).includes('ok'));
+	t.truthy(abcLine);
+	t.truthy(okLine);
+	t.false(abcLine.includes('https://ok.com'));
+	t.true(okLine.includes('https://ok.com'));
+});
+
+test('does not scan ahead from an unterminated OSC prelude to a later ST hyperlink', t => {
+	const result = wrapAnsi('\u001B]8;;unterminated abc \u001B]8;;https://ok.com\u001B\\ok\u001B]8;;\u001B\\', 5, {hard: true});
+	const lines = result.split('\n');
+	const abcLine = lines.find(line => stripAnsi(line).includes('abc'));
+	const okLine = lines.find(line => stripAnsi(line).includes('ok'));
+	t.truthy(abcLine);
+	t.truthy(okLine);
+	t.false(abcLine.includes('https://ok.com'));
+	t.true(okLine.includes('https://ok.com'));
 });
 
 test('covers non-SGR/non-hyperlink ansi escapes', t => {
