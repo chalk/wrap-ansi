@@ -143,7 +143,7 @@ const exec = (string, columns, options = {}) => {
 		}
 
 		// In 'hard' wrap mode, the length of a line is never allowed to extend past 'columns'
-		if (options.hard && lengths[index] > columns) {
+		if (options.hard && options.wordWrap !== false && lengths[index] > columns) {
 			const remainingColumns = columns - rowLength;
 			const breaksStartingThisLine = 1 + Math.floor((lengths[index] - remainingColumns - 1) / columns);
 			const breaksStartingNextLine = Math.floor((lengths[index] - 1) / columns);

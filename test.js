@@ -75,6 +75,17 @@ test('word wrapping', t => {
 	t.is(wrapAnsi(fixture3, 15), '12345678\n901234567890\n12345');
 });
 
+test('does not pre-wrap long words when hard wrapping with wordWrap false', t => {
+	const defaultResult = wrapAnsi('hi, this https://IsAReallyLongWordButIDoNotKnowHowItShouldBehave.com', 32, {hard: true});
+	t.is(defaultResult, 'hi, this\nhttps://IsAReallyLongWordButIDoN\notKnowHowItShouldBehave.com');
+
+	const result = wrapAnsi('hi, this https://IsAReallyLongWordButIDoNotKnowHowItShouldBehave.com', 32, {hard: true, wordWrap: false});
+	t.is(result, 'hi, this https://IsAReallyLongWo\nrdButIDoNotKnowHowItShouldBehave\n.com');
+
+	const result2 = wrapAnsi('hi, this IsAReallyLongWordButIDoNotKnowHowItShouldBehave', 32, {hard: true, wordWrap: false});
+	t.is(result2, 'hi, this IsAReallyLongWordButIDo\nNotKnowHowItShouldBehave');
+});
+
 test('no word-wrapping', t => {
 	const result = wrapAnsi(fixture3, 15, {wordWrap: false});
 	t.is(result, '12345678\n901234567890 12\n345');
