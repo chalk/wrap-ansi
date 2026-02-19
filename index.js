@@ -18,6 +18,9 @@ const ANSI_ESCAPE_LINK = `${ANSI_OSC}8;;`;
 const ANSI_ESCAPE_REGEX = new RegExp(`^\\u001B(?:\\${ANSI_CSI}(?<code>\\d+)${ANSI_SGR_TERMINATOR}|${ANSI_ESCAPE_LINK}(?<uri>[^\\u0007\\u001B]*)(?:\\u0007|\\u001B\\\\))`);
 const ANSI_ESCAPE_CSI_REGEX = new RegExp(`^\\u009B(?<code>\\d+)${ANSI_SGR_TERMINATOR}`);
 
+const segmenter = new Intl.Segmenter();
+const getGraphemes = string => Array.from(segmenter.segment(string), ({segment}) => segment);
+
 const wrapAnsiCode = code => `${ANSI_ESCAPE}${ANSI_CSI}${code}${ANSI_SGR_TERMINATOR}`;
 const wrapAnsiHyperlink = url => `${ANSI_ESCAPE}${ANSI_ESCAPE_LINK}${url}${ANSI_ESCAPE_BELL}`;
 
@@ -28,7 +31,7 @@ const wordLengths = string => string.split(' ').map(word => stringWidth(word));
 // Wrap a long word across multiple rows
 // ANSI escape codes do not count towards length
 const wrapWord = (rows, word, columns) => {
-	const characters = [...word];
+	const characters = getGraphemes(word);
 
 	let isInsideEscape = false;
 	let isInsideLinkEscape = false;
@@ -174,9 +177,9 @@ const exec = (string, columns, options = {}) => {
 	}
 
 	const preString = rows.join('\n');
-	const pre = [...preString];
+	const pre = getGraphemes(preString);
 
-	// We need to keep a separate index as `String#slice()` works on Unicode code units, while `pre` is an array of codepoints.
+	// We need to keep a separate index as `String#slice()` works on Unicode code units, while `pre` is an array of grapheme clusters.
 	let preStringIndex = 0;
 
 	for (const [index, character] of pre.entries()) {

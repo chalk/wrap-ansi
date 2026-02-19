@@ -112,6 +112,34 @@ test('supports unicode surrogate pairs', t => {
 	t.is(wrapAnsi('a\uD83C\uDE00bc\uD83C\uDE00d\uD83C\uDE00', 2, {hard: true}), 'a\n\uD83C\uDE00\nbc\n\uD83C\uDE00\nd\n\uD83C\uDE00');
 });
 
+test('does not split multi-codepoint grapheme clusters across lines', t => {
+	// ZWJ family emoji (7 codepoints, width 2)
+	t.is(wrapAnsi('a👨‍👩‍👧‍👦b', 2, {hard: true}), 'a\n👨‍👩‍👧‍👦\nb');
+
+	// Flag emoji (2 regional indicators, width 2)
+	t.is(wrapAnsi('a🇺🇸b', 2, {hard: true}), 'a\n🇺🇸\nb');
+
+	// Skin tone modifier (2 codepoints, width 2)
+	t.is(wrapAnsi('a👋🏽b', 2, {hard: true}), 'a\n👋🏽\nb');
+
+	// Tamil combining character (2 codepoints, width 1)
+	t.is(wrapAnsi('நிநி', 1, {hard: true}), 'நி\nநி');
+
+	// Multiple grapheme clusters fitting on one line
+	t.is(wrapAnsi('🇺🇸🇬🇧', 4, {hard: true}), '🇺🇸🇬🇧');
+	t.is(wrapAnsi('🇺🇸🇬🇧', 3, {hard: true}), '🇺🇸\n🇬🇧');
+
+	// Grapheme cluster at exact column boundary
+	t.is(wrapAnsi('ab👨‍👩‍👧‍👦cd', 4, {hard: true}), 'ab👨‍👩‍👧‍👦\ncd');
+	t.is(wrapAnsi('ab🇺🇸cd', 4, {hard: true}), 'ab🇺🇸\ncd');
+
+	// Soft wrapping does not split grapheme clusters
+	t.is(wrapAnsi('test 👨‍👩‍👧‍👦', 4), 'test\n👨‍👩‍👧‍👦');
+
+	// Colored grapheme clusters preserve ANSI codes across wraps
+	t.is(stripAnsi(wrapAnsi(chalk.red('a👨‍👩‍👧‍👦b'), 2, {hard: true})), 'a\n👨‍👩‍👧‍👦\nb');
+});
+
 test('#23, properly wraps whitespace with no trimming', t => {
 	t.is(wrapAnsi('   ', 2, {trim: false}), '  \n ');
 	t.is(wrapAnsi('   ', 2, {trim: false, hard: true}), '  \n ');
