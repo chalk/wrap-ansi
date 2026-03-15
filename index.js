@@ -1,5 +1,5 @@
+import {stripVTControlCharacters} from 'node:util';
 import stringWidth from 'string-width';
-import stripAnsi from 'strip-ansi';
 import ansiStyles from 'ansi-styles';
 
 const ANSI_ESCAPE = '\u001B';
@@ -248,7 +248,7 @@ const wrapWord = (rows, word, columns) => {
 
 	let isInsideEscape = false;
 	let isInsideLinkEscape = false;
-	let visible = stringWidth(stripAnsi(rows.at(-1)));
+	let visible = stringWidth(stripVTControlCharacters(rows.at(-1)));
 
 	for (const [index, character] of characters.entries()) {
 		const characterLength = stringWidth(character);
