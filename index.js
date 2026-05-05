@@ -1,5 +1,5 @@
+import {stripVTControlCharacters as stripAnsi} from 'node:util';
 import stringWidth from 'string-width';
-import stripAnsi from 'strip-ansi';
 import ansiStyles from 'ansi-styles';
 
 const ANSI_ESCAPE = '\u001B';
