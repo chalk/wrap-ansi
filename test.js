@@ -133,7 +133,7 @@ test('does not split multi-codepoint grapheme clusters across lines', t => {
 	// Skin tone modifier (2 codepoints, width 2)
 	t.is(wrapAnsi('a👋🏽b', 2, {hard: true}), 'a\n👋🏽\nb');
 
-	// Tamil combining character (2 codepoints, width 1)
+	// Tamil combining character (2 codepoints, width 2)
 	t.is(wrapAnsi('நிநி', 1, {hard: true}), 'நி\nநி');
 
 	// Multiple grapheme clusters fitting on one line
@@ -209,11 +209,34 @@ test('#43, preserves truecolor foreground and background styles on every wrapped
 	t.is(result, '\u001B[48;2;255;0;0m\u001B[38;2;0;0;0mte\u001B[39m\u001B[49m\n\u001B[48;2;255;0;0m\u001B[38;2;0;0;0mst\u001B[39m\u001B[49m');
 });
 
+test('#43, preserves colon-delimited RGB styles on every wrapped line', t => {
+	const input = '\u001B[38:2::255:0:0mabcdefghij\u001B[39m';
+	const result = wrapAnsi(input, 5, {hard: true});
+	t.is(result, '\u001B[38:2::255:0:0mabcde\u001B[39m\n\u001B[38:2::255:0:0mfghij\u001B[39m');
+
+	const mixedResult = wrapAnsi('\u001B[1;38:5:196mabcdefghij\u001B[0m', 5, {hard: true});
+	t.is(mixedResult, '\u001B[1;38:5:196mabcde\u001B[39m\u001B[22m\n\u001B[1m\u001B[38:5:196mfghij\u001B[0m');
+});
+
 test('#43, does not treat malformed extended color parameters as modifiers', t => {
 	const malformedForeground = wrapAnsi('\u001B[38;2;255mab\u001B[0m', 1, {hard: true, trim: false, wordWrap: false});
 	const malformedBackground = wrapAnsi('\u001B[48;5mab\u001B[0m', 1, {hard: true, trim: false, wordWrap: false});
 	t.is(malformedForeground, '\u001B[38;2;255ma\nb\u001B[0m');
 	t.is(malformedBackground, '\u001B[48;5ma\nb\u001B[0m');
+});
+
+test('#43, tracks a parameter that follows an extended color in the same sequence', t => {
+	const after256 = wrapAnsi('\u001B[38;5;196;1mabcdefghij\u001B[39m\u001B[22m', 5, {hard: true});
+	const afterRgb = wrapAnsi('\u001B[38;2;255;0;0;1mabcdefghij\u001B[39m\u001B[22m', 5, {hard: true});
+	t.is(after256, '\u001B[38;5;196;1mabcde\u001B[22m\u001B[39m\n\u001B[38;5;196m\u001B[1mfghij\u001B[39m\u001B[22m');
+	t.is(afterRgb, '\u001B[38;2;255;0;0;1mabcde\u001B[22m\u001B[39m\n\u001B[38;2;255;0;0m\u001B[1mfghij\u001B[39m\u001B[22m');
+});
+
+test('does not treat zero-argument semicolon color modes as colors', t => {
+	for (const mode of [0, 1]) {
+		const result = wrapAnsi(`\u001B[38;${mode}mabcdefghij\u001B[39m`, 5, {hard: true});
+		t.is(result, `\u001B[38;${mode}mabcde\nfghij\u001B[39m`);
+	}
 });
 
 test('#43, treats omitted SGR params as reset', t => {
@@ -394,9 +417,145 @@ test('does not scan ahead from an unterminated OSC prelude to a later ST hyperli
 	t.true(okLine.includes('https://ok.com'));
 });
 
+test('keeps repeated unterminated OSC sequences as text', t => {
+	const input = '\u001B]x'.repeat(4) + 'abc';
+	const result = wrapAnsi(input, 5, {hard: true, trim: false});
+	t.is(result.replaceAll('\n', ''), input);
+	t.is(wrapAnsi('\u001B]bad\u001BPbad\u0007ab', 5, {hard: true, trim: false}), '\u001B]bad\u001BP\nbad\u0007ab');
+});
+
+test('handles repeated unterminated OSC sequences efficiently', t => {
+	t.timeout(3000);
+	const input = '\u001B]x'.repeat(80_000) + '\u001B[31mabcdefghij\u001B[39m';
+	const result = wrapAnsi(input, 80, {hard: true, trim: false});
+	t.is(result.replaceAll('\n', ''), input);
+});
+
 test('covers non-SGR/non-hyperlink ansi escapes', t => {
 	t.is(wrapAnsi('Hello, \u001B[1D World!', 8), 'Hello,\u001B[1D\nWorld!');
 	t.is(wrapAnsi('Hello, \u001B[1D World!', 8, {trim: false}), 'Hello, \u001B[1D \nWorld!');
+});
+
+test('wraps parameterized hyperlinks without exposing their control payload', t => {
+	const result = wrapAnsi('\u001B]8;id=md-test;https://example.com\u0007abcdefghij\u001B]8;;\u0007', 5, {hard: true});
+	t.is(result, '\u001B]8;id=md-test;https://example.com\u0007abcde\u001B]8;;\u0007\n\u001B]8;id=md-test;https://example.com\u0007fghij\u001B]8;;\u0007');
+});
+
+test('keeps semicolons in the URI of a parameterized hyperlink', t => {
+	const result = wrapAnsi('\u001B]8;id=1:foo=bar;https://example.com/a;b\u001B\\abcdefghij\u001B]8;;\u001B\\', 5, {hard: true});
+	const lines = result.split('\n');
+	t.is(lines.length, 2);
+	t.is(stripAnsi(lines[0]), 'abcde');
+	t.is(stripAnsi(lines[1]), 'fghij');
+	t.true(lines[1].startsWith('\u001B]8;id=1:foo=bar;https://example.com/a;b'));
+});
+
+test('keeps generic OSC commands intact', t => {
+	for (const terminator of ['\u0007', '\u001B\\']) {
+		const input = `\u001B]0;window title${terminator}abcdefghij`;
+		t.is(wrapAnsi(input, 5, {hard: true}), `\u001B]0;window title${terminator}abcde\nfghij`);
+	}
+});
+
+test('treats OSC commands containing controls as plain text', t => {
+	for (const control of ['\u0001', '\u0018', '\u001A', '\u0090']) {
+		const input = `\u001B]0;ab${control}cdefghij\u0007XYZ`;
+		const result = wrapAnsi(input, 5, {hard: true, trim: false});
+		t.is(result.replaceAll('\n', ''), input);
+		t.true(result.includes('\n'));
+		t.true(result.indexOf('\n') < result.indexOf('\u0007'));
+	}
+});
+
+test('keeps an OSC 8 sequence without a URI field opaque', t => {
+	t.is(wrapAnsi('\u001B]8;x\u0007abcde', 3, {hard: true, trim: false}), '\u001B]8;x\u0007abc\nde');
+});
+
+test('wraps a parameterized hyperlink across more than two rows', t => {
+	const result = wrapAnsi('\u001B]8;id=x;https://example.com\u0007abcdefghijklmno\u001B]8;;\u0007', 5, {hard: true});
+	const lines = result.split('\n');
+	t.is(lines.length, 3);
+	t.deepEqual(lines.map(line => stripAnsi(line)), ['abcde', 'fghij', 'klmno']);
+	for (const line of lines) {
+		t.true(line.startsWith('\u001B]8;id=x;https://example.com\u0007'));
+		t.true(line.endsWith('\u001B]8;;\u0007'));
+	}
+});
+
+test('keeps the parameters of adjacent hyperlinks separate', t => {
+	const result = wrapAnsi('\u001B]8;id=a;https://a.com\u0007one\u001B]8;;\u0007 \u001B]8;id=b;https://b.com\u0007twothree\u001B]8;;\u0007', 4, {hard: true});
+	t.deepEqual(result.split('\n'), [
+		'\u001B]8;id=a;https://a.com\u0007one\u001B]8;;\u0007',
+		'\u001B]8;id=b;https://b.com\u0007twot\u001B]8;;\u0007',
+		'\u001B]8;id=b;https://b.com\u0007hree\u001B]8;;\u0007',
+	]);
+});
+
+test('wraps around non-SGR CSI sequences without swallowing the text', t => {
+	// The escape scanner used to run until the next `m`, so a CSI sequence with any other final byte ate the rest of the line.
+	t.is(wrapAnsi('\u001B[2Jabcdefghij', 5, {hard: true}), '\u001B[2Jabcde\nfghij');
+	t.is(wrapAnsi('\u001B[1;2Habcdefghij', 5, {hard: true}), '\u001B[1;2Habcde\nfghij');
+	t.is(wrapAnsi('\u001B[?25labcdefghij', 5, {hard: true}), '\u001B[?25labcde\nfghij');
+	t.is(wrapAnsi('\u001B[>4mabcdefghij', 5, {hard: true}), '\u001B[>4mabcde\nfghij');
+	t.is(wrapAnsi('\u001B[Aabcdefghij', 5, {hard: true}), '\u001B[Aabcde\nfghij');
+});
+
+test('keeps CSI intermediate bytes intact', t => {
+	// `ESC [ 1 SP q` sets the cursor shape. Its space is part of the sequence, not a word separator.
+	t.is(wrapAnsi('\u001B[1 qabcdefghij', 5, {hard: true}), '\u001B[1 qabcde\nfghij');
+});
+
+test('wraps around C1 CSI sequences', t => {
+	t.is(wrapAnsi('\u009B2Jabcdefghij', 5, {hard: true}), '\u009B2Jabcde\nfghij');
+});
+
+test('a non-SGR CSI sequence at a wrapped line start does not stop style reopening', t => {
+	const result = wrapAnsi('\u001B[31mab\u001B[2Kc', 1, {hard: true, trim: false, wordWrap: false});
+	const lines = result.split('\n');
+	t.is(lines.length, 3);
+	t.true(lines[2].includes('\u001B[2K'));
+	t.true(lines[2].includes('\u001B[31m'));
+});
+
+test('treats an unterminated control string as plain text', t => {
+	// Without a terminator nothing can be skipped, so the payload is wrapped as the visible text it appears to be.
+	t.is(wrapAnsi('\u001BPunterminated', 5, {hard: true}), '\u001BPunte\nrmina\nted');
+	t.is(wrapAnsi('\u0090unterminated', 5, {hard: true}), '\u0090unter\nminat\ned');
+	t.is(wrapAnsi('\u009Funterminated', 5, {hard: true}), '\u009Funter\nminat\ned');
+	t.is(wrapAnsi('\u001B]0;ab cde', 5, {hard: true}), '\u001B]0;ab\ncde');
+});
+
+test('treats unsupported control-string families as plain text', t => {
+	for (const introducer of ['\u001BP', '\u001BX', '\u001B^', '\u001B_']) {
+		const input = `${introducer}payload with spaces\u001B\\abcdefghij`;
+		t.is(wrapAnsi(input, 5, {hard: true, trim: false}), `${introducer}payl\noad \nwith \nspace\ns\u001B\\abc\ndefgh\nij`);
+	}
+
+	const c1Input = '\u0090payload with spaces\u009Cabcdefghij';
+	t.is(wrapAnsi(c1Input, 5, {hard: true, trim: false}), '\u0090paylo\nad \nwith \nspace\ns\u009Cabcd\nefghi\nj');
+	t.is(wrapAnsi('\u001B#8abcdefghij', 5, {hard: true, trim: false}), '\u001B#8abc\ndefgh\nij');
+	t.is(wrapAnsi('\u001B[3\n1mabcdefghij', 5, {hard: true, trim: false}), '\u001B[3\n1mabc\ndefgh\nij');
+});
+
+test('#62, wraps a parameterized hyperlink that also carries SGR styles', t => {
+	const result = wrapAnsi('\u001B[31m\u001B]8;id=x;https://example.com\u0007abcdefghij\u001B]8;;\u0007\u001B[39m', 5, {hard: true});
+	t.is(result, '\u001B[31m\u001B]8;id=x;https://example.com\u0007abcde\u001B]8;;\u0007\u001B[39m\n\u001B[31m\u001B]8;id=x;https://example.com\u0007fghij\u001B]8;;\u0007\u001B[39m');
+});
+
+test('#62, wraps a parameterized hyperlink on word boundaries in soft wrap mode', t => {
+	const result = wrapAnsi('\u001B]8;id=x;https://example.com\u0007hello world\u001B]8;;\u0007', 5);
+	const lines = result.split('\n');
+	t.is(lines.length, 2);
+	t.is(stripAnsi(lines[0]), 'hello');
+	t.is(stripAnsi(lines[1]), 'world');
+	for (const line of lines) {
+		t.true(line.includes('\u001B]8;id=x;https://example.com\u0007'));
+	}
+});
+
+test('reopens SGR styles across a wrap between fullwidth characters', t => {
+	// The row fills at four columns, so the break lands before the third character rather than at the column count.
+	t.is(wrapAnsi('\u001B[31m日本語\u001B[39m', 5, {hard: true}), '\u001B[31m日本\u001B[39m\n\u001B[31m語\u001B[39m');
 });
 
 test('#39, normalizes newlines', t => {
@@ -417,4 +576,36 @@ test('#54, uses tab stops while expanding tabs', t => {
 test('#54, tab expansion ignores ANSI codes when computing column position', t => {
 	const result = wrapAnsi(chalk.red('ab') + '\tcd', 20);
 	t.is(stripAnsi(result), 'ab      cd');
+});
+
+test('preserves tab stops across ANSI-split grapheme clusters', t => {
+	const input = '👨\u001B[31m‍👩‍👧‍👦\tX';
+	t.is(wrapAnsi(input, 30, {trim: false}), '👨\u001B[31m‍👩‍👧‍👦      X');
+});
+
+test('closes and reopens styles around a carriage return before a wrap', t => {
+	const result = wrapAnsi('\u001B[31mfoo\r bar\u001B[39m', 3);
+	t.is(result, '\u001B[31mfoo\r\u001B[39m\n\u001B[31mbar\u001B[39m');
+});
+
+test('keeps a row of zero-width words linear rather than quadratic', t => {
+	t.timeout(3000);
+
+	const zeroWidthWords = 'a' + ' \u001B[31m'.repeat(80_000);
+	t.is(stripAnsi(wrapAnsi(zeroWidthWords, 80)), 'a');
+
+	const unterminatedCsi = `\u001B[${'1'.repeat(80_000)}${' '.repeat(80_000)}`;
+	t.true(wrapAnsi(unterminatedCsi, 80).startsWith(`\u001B[${'1'.repeat(80_000)}`));
+});
+
+test('places the word after a hard-wrapped word at the right column', t => {
+	// The row that the long word ends on decides where the next word goes.
+	t.is(wrapAnsi('aaabb c', 3, {hard: true}), 'aaa\nbb\nc');
+	t.is(wrapAnsi('aaab c', 3, {hard: true}), 'aaa\nb c');
+	t.is(wrapAnsi('aaaaaa b', 3, {hard: true}), 'aaa\naaa\nb');
+});
+
+test('does not reopen styles on a trailing empty row', t => {
+	t.is(wrapAnsi('\u001B[31mabc ', 3, {wordWrap: false}), '\u001B[31mabc\u001B[39m\n');
+	t.is(wrapAnsi('\u001B]8;;https://example.com\u0007abc ', 3, {wordWrap: false}), '\u001B]8;;https://example.com\u0007abc\u001B]8;;\u0007\n');
 });

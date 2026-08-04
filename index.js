@@ -1,15 +1,9 @@
 import stringWidth from 'string-width';
-import stripAnsi from 'strip-ansi';
 import ansiStyles from 'ansi-styles';
 
 const ANSI_ESCAPE = '\u001B';
-const ANSI_ESCAPE_CSI = '\u009B';
-const ESCAPES = new Set([
-	ANSI_ESCAPE,
-	ANSI_ESCAPE_CSI,
-]);
-
 const ANSI_ESCAPE_BELL = '\u0007';
+const C1_CSI = '\u009B';
 const ANSI_CSI = '[';
 const ANSI_OSC = ']';
 const ANSI_SGR_TERMINATOR = 'm';
@@ -20,61 +14,219 @@ const ANSI_SGR_RESET_UNDERLINE_COLOR = 59;
 const ANSI_SGR_FOREGROUND_EXTENDED = 38;
 const ANSI_SGR_BACKGROUND_EXTENDED = 48;
 const ANSI_SGR_UNDERLINE_COLOR_EXTENDED = 58;
-const ANSI_SGR_COLOR_MODE_256 = 5;
 const ANSI_SGR_COLOR_MODE_RGB = 2;
-const ANSI_ESCAPE_LINK = `${ANSI_OSC}8;;`;
-const ANSI_ESCAPE_REGEX = new RegExp(`^\\u001B(?:\\${ANSI_CSI}(?<sgr>[0-9;]*)${ANSI_SGR_TERMINATOR}|${ANSI_ESCAPE_LINK}(?<uri>[^\\u0007\\u001B]*)(?:\\u0007|\\u001B\\\\))`);
-const ANSI_ESCAPE_CSI_REGEX = new RegExp(`^\\u009B(?<sgr>[0-9;]*)${ANSI_SGR_TERMINATOR}`);
+const ANSI_SGR_COLOR_MODE_256 = 5;
+const ANSI_ESCAPE_LINK = `${ANSI_OSC}8;`;
+// The first character of every sequence we recognize.
+const ESCAPES = new Set([
+	ANSI_ESCAPE,
+	C1_CSI,
+]);
+const ESCAPE_CHARACTERS = [...ESCAPES].join('');
+
+const CSI_INTRODUCER = `(?:${ANSI_ESCAPE}\\${ANSI_CSI}|${C1_CSI})`;
+const CSI_PARAMETERS = '[0-?]*[ -/]*[@-~]';
+const SGR_PARAMETERS = `(?<sgr>[0-9;:]*)${ANSI_SGR_TERMINATOR}`;
+const OSC_STRING_TERMINATOR = `(?:${ANSI_ESCAPE_BELL}|${ANSI_ESCAPE}\\\\)`;
+const OSC_STRING_PAYLOAD = String.raw`[^\u0000-\u001F\u007F-\u009F]*`;
+// A hyperlink is `OSC 8 ; parameters ; URI ST`, where `parameters` is a possibly empty list of `key=value` pairs joined by `:`.
+const LINK_PARAMETERS = String.raw`8;(?<parameters>[^;\u0000-\u001F\u007F-\u009F]*);(?<uri>${OSC_STRING_PAYLOAD})${OSC_STRING_TERMINATOR}`;
+const OSC_STRING = `${OSC_STRING_PAYLOAD}${OSC_STRING_TERMINATOR}`;
+
+// Supported boundary: semicolon-delimited SGR styling, colon-delimited RGB/indexed colors, and OSC 8 hyperlinks are tracked, while ordinary CSI sequences and other complete 7-bit OSC commands are preserved as opaque zero-width units. This is intentionally not a terminal emulator, so other colon-delimited SGR semantics, C0 bytes inside sequences, DCS/SOS/PM/APC control strings, cancellations, generic ESC sequences, and 8-bit control-string forms are unsupported. Newlines always delimit input lines before ANSI parsing.
+const ANSI_ESCAPE_REGEX = new RegExp(
+	`${CSI_INTRODUCER}(?:${SGR_PARAMETERS}|${CSI_PARAMETERS})`
+	+ `|${ANSI_ESCAPE}\\${ANSI_OSC}(?:${LINK_PARAMETERS}|${OSC_STRING})`,
+	'y',
+);
+
 const ANSI_SGR_MODIFIER_CLOSE_CODES = new Set(ansiStyles.codes.values());
 ANSI_SGR_MODIFIER_CLOSE_CODES.delete(ANSI_SGR_RESET);
 
 const segmenter = new Intl.Segmenter();
-const getGraphemes = string => Array.from(segmenter.segment(string), ({segment}) => segment);
+// Complete ANSI sequences have already been removed before measuring these strings. Avoid string-width's ANSI scan so malformed sequences are not rescanned.
+const getStringWidth = string => stringWidth(string, {countAnsiEscapeCodes: true});
 const TAB_SIZE = 8;
 
+// Finds the next character that could introduce a sequence, so plain text is skipped in one native step.
+const ESCAPE_INTRODUCER_REGEX = new RegExp(`[${ESCAPE_CHARACTERS}]`, 'g');
+// The final pass only cares about sequences and row boundaries, so it skips everything else in one native step.
+const ROW_BOUNDARY_REGEX = new RegExp(`[\\n${ESCAPE_CHARACTERS}]`, 'g');
+// Every printable ASCII character is its own grapheme cluster of width one, which lets the segmenter be skipped.
+const ASCII_PRINTABLE_REGEX = /^[ -~]*$/;
+
 const wrapAnsiCode = code => `${ANSI_ESCAPE}${ANSI_CSI}${code}${ANSI_SGR_TERMINATOR}`;
-const wrapAnsiHyperlink = url => `${ANSI_ESCAPE}${ANSI_ESCAPE_LINK}${url}${ANSI_ESCAPE_BELL}`;
+const wrapAnsiHyperlink = (url, parameters = '') => `${ANSI_ESCAPE}${ANSI_ESCAPE_LINK}${parameters};${url}${ANSI_ESCAPE_BELL}`;
+
+// Match a complete escape sequence starting at `index`, or return `undefined` when none starts there.
+const matchAnsiEscape = (string, index) => {
+	if (!ESCAPES.has(string[index])) {
+		return;
+	}
+
+	ANSI_ESCAPE_REGEX.lastIndex = index;
+	return ANSI_ESCAPE_REGEX.exec(string) ?? undefined;
+};
+
+// Walk a string as alternating plain text runs and complete escape sequences.
+// A character that looks like an introducer but does not start a valid sequence stays plain text.
+const forEachSegment = (string, onPlainText, onEscape = () => {}) => {
+	let plainStart = 0;
+	let index = 0;
+
+	while (index < string.length) {
+		ESCAPE_INTRODUCER_REGEX.lastIndex = index;
+		const introducer = ESCAPE_INTRODUCER_REGEX.exec(string);
+
+		if (!introducer) {
+			break;
+		}
+
+		const escape = matchAnsiEscape(string, introducer.index);
+
+		if (!escape) {
+			index = introducer.index + 1;
+			continue;
+		}
+
+		if (introducer.index > plainStart) {
+			onPlainText(string.slice(plainStart, introducer.index));
+		}
+
+		onEscape(escape[0]);
+		index = introducer.index + escape[0].length;
+		plainStart = index;
+	}
+
+	if (plainStart < string.length) {
+		onPlainText(string.slice(plainStart));
+	}
+};
+
+// The visible width of a string, ignoring escape sequences.
+const getWidth = string => {
+	let plainText = '';
+
+	forEachSegment(string, part => {
+		plainText += part;
+	});
+
+	return getStringWidth(plainText);
+};
+
+// Split a string into escape sequences, which are zero width and must never be split, and grapheme clusters.
+// The supported boundary is between grapheme clusters and ANSI sequences; ANSI inserted inside a cluster is treated as separate segments.
+const getTokens = string => {
+	const tokens = [];
+
+	forEachSegment(string, plainText => {
+		if (ASCII_PRINTABLE_REGEX.test(plainText)) {
+			for (const character of plainText) {
+				tokens.push({value: character, width: 1});
+			}
+
+			return;
+		}
+
+		for (const {segment} of segmenter.segment(plainText)) {
+			tokens.push({value: segment, width: getStringWidth(segment)});
+		}
+	}, escape => {
+		tokens.push({value: escape, width: 0});
+	});
+
+	return tokens;
+};
+
+// Split on spaces, ignoring spaces that appear inside a recognized sequence.
+const splitWords = string => {
+	let currentWord = {value: '', plainText: ''};
+	const words = [currentWord];
+
+	forEachSegment(string, plainText => {
+		const parts = plainText.split(' ');
+		currentWord.value += parts[0];
+		currentWord.plainText += parts[0];
+
+		for (let index = 1; index < parts.length; index++) {
+			currentWord = {value: parts[index], plainText: parts[index]};
+			words.push(currentWord);
+		}
+	}, escape => {
+		currentWord.value += escape;
+	});
+
+	// Measured once per word rather than per run, so a grapheme cluster split by an escape still counts once.
+	for (const word of words) {
+		word.width = getStringWidth(word.plainText);
+	}
+
+	return words;
+};
+
+const getColonColorToken = parameter => {
+	const parts = parameter.split(':');
+	const code = Number.parseInt(parts[0], 10);
+	const mode = Number.parseInt(parts[1], 10);
+
+	if (![ANSI_SGR_FOREGROUND_EXTENDED, ANSI_SGR_BACKGROUND_EXTENDED, ANSI_SGR_UNDERLINE_COLOR_EXTENDED].includes(code)) {
+		return;
+	}
+
+	if (mode === ANSI_SGR_COLOR_MODE_256 && parts.length === 3 && /^\d+$/.test(parts[2])) {
+		return {code, open: parameter, hasArguments: true};
+	}
+
+	if (mode !== ANSI_SGR_COLOR_MODE_RGB) {
+		return;
+	}
+
+	const components = parts.length === 6 ? parts.slice(3) : parts.slice(2);
+	const colorSpace = parts.length === 6 ? parts[2] : undefined;
+	if (components.length === 3 && components.every(component => /^\d+$/.test(component)) && (colorSpace === undefined || /^\d*$/.test(colorSpace))) {
+		return {code, open: parameter, hasArguments: true};
+	}
+};
 
 const getSgrTokens = sgrParameters => {
-	const codes = sgrParameters.split(';').map(sgrParameter => sgrParameter === '' ? ANSI_SGR_RESET : Number.parseInt(sgrParameter, 10));
+	const parameters = sgrParameters.split(';');
 	const sgrTokens = [];
 
-	for (let index = 0; index < codes.length; index++) {
-		const code = codes[index];
+	for (let index = 0; index < parameters.length; index++) {
+		const parameter = parameters[index];
+		if (parameter.includes(':')) {
+			const colonColorToken = getColonColorToken(parameter);
+			if (colonColorToken) {
+				sgrTokens.push(colonColorToken);
+			}
+
+			continue;
+		}
+
+		const code = parameter === '' ? ANSI_SGR_RESET : Number.parseInt(parameter, 10);
 
 		if (!Number.isFinite(code)) {
 			continue;
 		}
 
-		if (
-			(
-				code === ANSI_SGR_FOREGROUND_EXTENDED
-				|| code === ANSI_SGR_BACKGROUND_EXTENDED
-				|| code === ANSI_SGR_UNDERLINE_COLOR_EXTENDED
-			)
-		) {
-			if (index + 1 >= codes.length) {
+		if (code === ANSI_SGR_FOREGROUND_EXTENDED || code === ANSI_SGR_BACKGROUND_EXTENDED || code === ANSI_SGR_UNDERLINE_COLOR_EXTENDED) {
+			if (index + 1 >= parameters.length) {
 				break;
 			}
 
-			const mode = codes[index + 1];
-
-			if (mode === ANSI_SGR_COLOR_MODE_256 && Number.isFinite(codes[index + 2])) {
-				sgrTokens.push([code, mode, codes[index + 2]]);
+			const mode = Number.parseInt(parameters[index + 1], 10);
+			const colorIndex = Number.parseInt(parameters[index + 2], 10);
+			if (mode === ANSI_SGR_COLOR_MODE_256 && Number.isFinite(colorIndex)) {
+				sgrTokens.push({code, open: [code, mode, colorIndex].join(';'), hasArguments: true});
 				index += 2;
 				continue;
 			}
 
-			const red = codes[index + 2];
-			const green = codes[index + 3];
-			const blue = codes[index + 4];
-			if (
-				mode === ANSI_SGR_COLOR_MODE_RGB
-				&& Number.isFinite(red)
-				&& Number.isFinite(green)
-				&& Number.isFinite(blue)
-			) {
-				sgrTokens.push([code, mode, red, green, blue]);
+			const red = Number.parseInt(parameters[index + 2], 10);
+			const green = Number.parseInt(parameters[index + 3], 10);
+			const blue = Number.parseInt(parameters[index + 4], 10);
+			if (mode === ANSI_SGR_COLOR_MODE_RGB && Number.isFinite(red) && Number.isFinite(green) && Number.isFinite(blue)) {
+				sgrTokens.push({code, open: [code, mode, red, green, blue].join(';'), hasArguments: true});
 				index += 4;
 				continue;
 			}
@@ -82,7 +234,7 @@ const getSgrTokens = sgrParameters => {
 			break;
 		}
 
-		sgrTokens.push([code]);
+		sgrTokens.push({code, open: String(code), hasArguments: false});
 	}
 
 	return sgrTokens;
@@ -110,27 +262,28 @@ const removeModifierStylesByClose = (activeStyles, closeCode) => {
 	}
 };
 
-const getColorStyle = (code, sgrToken) => {
-	if ((code >= 30 && code <= 37) || (code >= 90 && code <= 97) || (code === ANSI_SGR_FOREGROUND_EXTENDED && sgrToken.length > 1)) {
+const getColorStyle = sgrToken => {
+	const {code, open, hasArguments} = sgrToken;
+	if ((code >= 30 && code <= 37) || (code >= 90 && code <= 97) || (code === ANSI_SGR_FOREGROUND_EXTENDED && hasArguments)) {
 		return {
 			family: 'foreground',
-			open: sgrToken.join(';'),
+			open,
 			close: ANSI_SGR_RESET_FOREGROUND,
 		};
 	}
 
-	if ((code >= 40 && code <= 47) || (code >= 100 && code <= 107) || (code === ANSI_SGR_BACKGROUND_EXTENDED && sgrToken.length > 1)) {
+	if ((code >= 40 && code <= 47) || (code >= 100 && code <= 107) || (code === ANSI_SGR_BACKGROUND_EXTENDED && hasArguments)) {
 		return {
 			family: 'background',
-			open: sgrToken.join(';'),
+			open,
 			close: ANSI_SGR_RESET_BACKGROUND,
 		};
 	}
 
-	if (code === ANSI_SGR_UNDERLINE_COLOR_EXTENDED && sgrToken.length > 1) {
+	if (code === ANSI_SGR_UNDERLINE_COLOR_EXTENDED && hasArguments) {
 		return {
 			family: 'underlineColor',
-			open: sgrToken.join(';'),
+			open,
 			close: ANSI_SGR_RESET_UNDERLINE_COLOR,
 		};
 	}
@@ -166,13 +319,13 @@ const applySgrResetCode = (code, activeStyles) => {
 };
 
 const applySgrToken = (sgrToken, activeStyles) => {
-	const [code] = sgrToken;
+	const {code} = sgrToken;
 
 	if (applySgrResetCode(code, activeStyles)) {
 		return;
 	}
 
-	const colorStyle = getColorStyle(code, sgrToken);
+	const colorStyle = getColorStyle(sgrToken);
 	if (colorStyle) {
 		upsertActiveStyle(activeStyles, colorStyle);
 		return;
@@ -182,7 +335,7 @@ const applySgrToken = (sgrToken, activeStyles) => {
 	if (close !== undefined && close !== ANSI_SGR_RESET) {
 		upsertActiveStyle(activeStyles, {
 			family: `modifier-${code}`,
-			open: sgrToken.join(';'),
+			open: sgrToken.open,
 			close,
 		});
 	}
@@ -195,97 +348,52 @@ const applySgrParameters = (sgrParameters, activeStyles) => {
 };
 
 const applySgrResets = (sgrParameters, activeStyles) => {
-	for (const sgrToken of getSgrTokens(sgrParameters)) {
-		const [code] = sgrToken;
+	for (const {code} of getSgrTokens(sgrParameters)) {
 		applySgrResetCode(code, activeStyles);
 	}
 };
 
-const applyLeadingSgrResets = (string, activeStyles) => {
-	let remainder = string;
+const applyLeadingSgrResets = (string, startIndex, activeStyles) => {
+	let index = startIndex;
 
-	while (remainder.length > 0) {
-		if (remainder.startsWith(ANSI_ESCAPE) && remainder[1] !== '\\') {
-			const match = ANSI_ESCAPE_REGEX.exec(remainder);
-			if (!match) {
-				break;
-			}
-
-			if (match.groups.sgr !== undefined) {
-				applySgrResets(match.groups.sgr, activeStyles);
-			}
-
-			remainder = remainder.slice(match[0].length);
-			continue;
+	while (index < string.length) {
+		const match = matchAnsiEscape(string, index);
+		if (!match) {
+			break;
 		}
 
-		if (remainder.startsWith(ANSI_ESCAPE_CSI)) {
-			const match = ANSI_ESCAPE_CSI_REGEX.exec(remainder);
-			if (!match || match.groups.sgr === undefined) {
-				break;
-			}
-
+		if (match.groups.sgr !== undefined) {
 			applySgrResets(match.groups.sgr, activeStyles);
-			remainder = remainder.slice(match[0].length);
-			continue;
 		}
 
-		break;
+		index += match[0].length;
 	}
 };
 
 const getClosingSgrSequence = activeStyles => [...activeStyles].reverse().map(activeStyle => wrapAnsiCode(activeStyle.close)).join('');
 const getOpeningSgrSequence = activeStyles => activeStyles.map(activeStyle => wrapAnsiCode(activeStyle.open)).join('');
 
-// Calculate the length of words split on ' ', ignoring
-// the extra characters added by ANSI escape codes
-const wordLengths = string => string.split(' ').map(word => stringWidth(word));
-
 // Wrap a long word across multiple rows
 // ANSI escape codes do not count towards length
-const wrapWord = (rows, word, columns) => {
-	const characters = getGraphemes(word);
+// Takes the visible width of the last row and returns the width of the row the word ends on, so callers never have to measure the rows themselves.
+const wrapWord = (rows, word, columns, rowWidth) => {
+	const tokens = getTokens(word);
 
-	let isInsideEscape = false;
-	let isInsideLinkEscape = false;
-	let visible = stringWidth(stripAnsi(rows.at(-1)));
+	let visible = rowWidth;
 
-	for (const [index, character] of characters.entries()) {
-		const characterLength = stringWidth(character);
+	for (let index = 0; index < tokens.length; index++) {
+		const token = tokens[index];
 
-		if (visible + characterLength <= columns) {
-			rows[rows.length - 1] += character;
-		} else {
-			rows.push(character);
+		// Escape sequences and combining marks are zero width, so they always stay on the current row.
+		if (token.width > 0 && visible > 0 && visible + token.width > columns) {
+			rows.push('');
 			visible = 0;
 		}
 
-		if (ESCAPES.has(character) && !(isInsideLinkEscape && character === ANSI_ESCAPE && characters[index + 1] === '\\')) {
-			isInsideEscape = true;
+		rows[rows.length - 1] += token.value;
+		visible += token.width;
 
-			const ansiEscapeLinkCandidate = characters.slice(index + 1, index + 1 + ANSI_ESCAPE_LINK.length).join('');
-			isInsideLinkEscape = ansiEscapeLinkCandidate === ANSI_ESCAPE_LINK;
-		}
-
-		if (isInsideEscape) {
-			if (isInsideLinkEscape) {
-				if (
-					character === ANSI_ESCAPE_BELL
-					|| (character === '\\' && index > 0 && characters[index - 1] === ANSI_ESCAPE) // ST terminator (ESC \)
-				) {
-					isInsideEscape = false;
-					isInsideLinkEscape = false;
-				}
-			} else if (character === ANSI_SGR_TERMINATOR) {
-				isInsideEscape = false;
-			}
-
-			continue;
-		}
-
-		visible += characterLength;
-
-		if (visible === columns && index < characters.length - 1) {
+		if (visible === columns && index < tokens.length - 1) {
 			rows.push('');
 			visible = 0;
 		}
@@ -296,26 +404,46 @@ const wrapWord = (rows, word, columns) => {
 	if (!visible && rows.at(-1).length > 0 && rows.length > 1) {
 		rows[rows.length - 2] += rows.pop();
 	}
+
+	// The tokens are measured one by one, so a grapheme cluster that an escape sequence splits is counted once per part rather than once as a whole. Only the finished row tells the true width, and it is at most one row long to measure.
+	return getWidth(rows.at(-1));
 };
 
 // Trims spaces from a string ignoring invisible sequences
 const stringVisibleTrimSpacesRight = string => {
-	const words = string.split(' ');
-	let last = words.length;
-
-	while (last > 0) {
-		if (stringWidth(words[last - 1]) > 0) {
-			break;
-		}
-
-		last--;
-	}
-
-	if (last === words.length) {
+	if (!string.includes(' ')) {
 		return string;
 	}
 
-	return words.slice(0, last).join(' ') + words.slice(last).join('');
+	const segments = [];
+	forEachSegment(string, plainText => {
+		segments.push({value: plainText, isEscape: false});
+	}, escape => {
+		segments.push({value: escape, isEscape: true});
+	});
+
+	// Drop the spaces that trail the last visible character, but keep the invisible sequences among them.
+	for (let index = segments.length - 1; index >= 0; index--) {
+		const segment = segments[index];
+
+		if (segment.isEscape) {
+			continue;
+		}
+
+		// Scanned rather than matched with a regex, as a trailing-space pattern backtracks quadratically.
+		let end = segment.value.length;
+		while (end > 0 && segment.value[end - 1] === ' ') {
+			end--;
+		}
+
+		segment.value = segment.value.slice(0, end);
+
+		if (getStringWidth(segment.value) > 0) {
+			break;
+		}
+	}
+
+	return segments.map(segment => segment.value).join('');
 };
 
 const expandTabs = line => {
@@ -323,22 +451,101 @@ const expandTabs = line => {
 		return line;
 	}
 
-	const segments = line.split('\t');
 	let visible = 0;
 	let expandedLine = '';
+	let plainTextSinceTab = '';
 
-	for (const [index, segment] of segments.entries()) {
-		expandedLine += segment;
-		visible += stringWidth(segment);
+	const expandPlainText = plainText => {
+		const segments = plainText.split('\t');
 
-		if (index < segments.length - 1) {
-			const spaces = TAB_SIZE - (visible % TAB_SIZE);
-			expandedLine += ' '.repeat(spaces);
-			visible += spaces;
+		for (const [index, segment] of segments.entries()) {
+			expandedLine += segment;
+			plainTextSinceTab += segment;
+
+			if (index < segments.length - 1) {
+				visible += getStringWidth(plainTextSinceTab);
+				plainTextSinceTab = '';
+				const spaces = TAB_SIZE - (visible % TAB_SIZE);
+				expandedLine += ' '.repeat(spaces);
+				visible += spaces;
+			}
+		}
+	};
+
+	forEachSegment(line, expandPlainText, escape => {
+		expandedLine += escape;
+	});
+
+	return expandedLine;
+};
+
+// Close the active styles and hyperlink before every row break and reopen them after, so each row stands on its own.
+// Only sequences and newlines matter here, so the string is scanned directly rather than split into grapheme clusters.
+const restoreStylesAcrossRows = preString => {
+	let returnValue = '';
+	let activeHyperlink;
+	const activeStyles = [];
+	let index = 0;
+	let copiedIndex = 0;
+
+	while (index < preString.length) {
+		ROW_BOUNDARY_REGEX.lastIndex = index;
+		const boundary = ROW_BOUNDARY_REGEX.exec(preString);
+
+		if (!boundary) {
+			break;
+		}
+
+		index = boundary.index;
+
+		if (boundary[0] !== '\n') {
+			const escape = matchAnsiEscape(preString, index);
+
+			if (!escape) {
+				index++;
+				continue;
+			}
+
+			const {groups} = escape;
+			if (groups.sgr !== undefined) {
+				applySgrParameters(groups.sgr, activeStyles);
+			} else if (groups.uri !== undefined) {
+				activeHyperlink = groups.uri.length === 0 ? undefined : {parameters: groups.parameters, uri: groups.uri};
+			}
+
+			index += escape[0].length;
+			continue;
+		}
+
+		// Everything up to the row break is copied verbatim, sequences included.
+		returnValue += preString.slice(copiedIndex, index);
+
+		// An empty row never reopened anything, so there is nothing to close.
+		if (index > copiedIndex) {
+			if (activeHyperlink) {
+				returnValue += wrapAnsiHyperlink('');
+			}
+
+			returnValue += getClosingSgrSequence(activeStyles);
+		}
+
+		returnValue += '\n';
+		index++;
+		copiedIndex = index;
+
+		// An empty row has nothing to style, so the styles stay closed until the next row with content. A trailing row break leaves no row at all.
+		if (index < preString.length && preString[index] !== '\n') {
+			const openingStyles = [...activeStyles];
+			applyLeadingSgrResets(preString, index, openingStyles);
+			returnValue += getOpeningSgrSequence(openingStyles);
+
+			if (activeHyperlink) {
+				returnValue += wrapAnsiHyperlink(activeHyperlink.uri, activeHyperlink.parameters);
+			}
 		}
 	}
 
-	return expandedLine;
+	return returnValue + preString.slice(copiedIndex);
 };
 
 // The wrap-ansi module can be invoked in either 'hard' or 'soft' wrap mode.
@@ -351,21 +558,35 @@ const exec = (string, columns, options = {}) => {
 		return '';
 	}
 
-	let returnValue = '';
-	let escapeUrl;
-	const activeStyles = [];
-
-	const lengths = wordLengths(string);
+	const words = splitWords(string);
 	let rows = [''];
+	// Tracked as rows are built. Remeasuring the row for every word makes wrapping quadratic in the line length.
+	let rowLength = 0;
+	// Words are only ever appended, so a row that already starts with content can never become trimmable again. Retrimming it for every word makes wrapping quadratic in the line length.
+	let trimmedRowIndex = -1;
 
-	for (const [index, word] of string.split(' ').entries()) {
-		if (options.trim !== false) {
-			rows[rows.length - 1] = rows.at(-1).trimStart();
+	let isFirstWord = true;
+
+	for (const word of words) {
+		const rowIndex = rows.length - 1;
+
+		if (options.trim !== false && trimmedRowIndex !== rowIndex) {
+			const row = rows[rowIndex];
+			const trimmedRow = row.trimStart();
+
+			if (trimmedRow.length !== row.length) {
+				rows[rowIndex] = trimmedRow;
+				rowLength = getWidth(trimmedRow);
+			}
+
+			if (trimmedRow.length > 0) {
+				trimmedRowIndex = rowIndex;
+			}
 		}
 
-		let rowLength = stringWidth(rows.at(-1));
-
-		if (index !== 0) {
+		if (isFirstWord) {
+			isFirstWord = false;
+		} else {
 			if (rowLength >= columns && (options.wordWrap === false || options.trim === false)) {
 				// If we start with a new word but the current row length equals the length of the columns, add a new row
 				rows.push('');
@@ -379,85 +600,46 @@ const exec = (string, columns, options = {}) => {
 		}
 
 		// In 'hard' wrap mode, the length of a line is never allowed to extend past 'columns'
-		if (options.hard && options.wordWrap !== false && lengths[index] > columns) {
+		if (options.hard && options.wordWrap !== false && word.width > columns) {
 			const remainingColumns = columns - rowLength;
-			const breaksStartingThisLine = 1 + Math.floor((lengths[index] - remainingColumns - 1) / columns);
-			const breaksStartingNextLine = Math.floor((lengths[index] - 1) / columns);
+			const breaksStartingThisLine = 1 + Math.floor((word.width - remainingColumns - 1) / columns);
+			const breaksStartingNextLine = Math.floor((word.width - 1) / columns);
 			if (breaksStartingNextLine < breaksStartingThisLine) {
 				rows.push('');
+				rowLength = 0;
 			}
 
-			wrapWord(rows, word, columns);
+			rowLength = wrapWord(rows, word.value, columns, rowLength);
 			continue;
 		}
 
-		if (rowLength + lengths[index] > columns && rowLength > 0 && lengths[index] > 0) {
+		if (rowLength + word.width > columns && rowLength > 0 && word.width > 0) {
 			if (options.wordWrap === false && rowLength < columns) {
-				wrapWord(rows, word, columns);
+				rowLength = wrapWord(rows, word.value, columns, rowLength);
 				continue;
 			}
 
 			rows.push('');
+			rowLength = 0;
 		}
 
-		if (rowLength + lengths[index] > columns && options.wordWrap === false) {
-			wrapWord(rows, word, columns);
+		if (rowLength + word.width > columns && options.wordWrap === false) {
+			rowLength = wrapWord(rows, word.value, columns, rowLength);
 			continue;
 		}
 
-		rows[rows.length - 1] += word;
+		rows[rows.length - 1] += word.value;
+		rowLength += word.width;
 	}
 
 	if (options.trim !== false) {
 		rows = rows.map(row => stringVisibleTrimSpacesRight(row));
 	}
 
-	const preString = rows.join('\n');
-	const pre = getGraphemes(preString);
-
-	// We need to keep a separate index as `String#slice()` works on Unicode code units, while `pre` is an array of grapheme clusters.
-	let preStringIndex = 0;
-
-	for (const [index, character] of pre.entries()) {
-		returnValue += character;
-
-		if (character === ANSI_ESCAPE && pre[index + 1] !== '\\') {
-			const {groups} = ANSI_ESCAPE_REGEX.exec(preString.slice(preStringIndex)) || {groups: {}};
-			if (groups.sgr !== undefined) {
-				applySgrParameters(groups.sgr, activeStyles);
-			} else if (groups.uri !== undefined) {
-				escapeUrl = groups.uri.length === 0 ? undefined : groups.uri;
-			}
-		} else if (character === ANSI_ESCAPE_CSI) {
-			const {groups} = ANSI_ESCAPE_CSI_REGEX.exec(preString.slice(preStringIndex)) || {groups: {}};
-			if (groups.sgr !== undefined) {
-				applySgrParameters(groups.sgr, activeStyles);
-			}
-		}
-
-		if (pre[index + 1] === '\n') {
-			if (escapeUrl) {
-				returnValue += wrapAnsiHyperlink('');
-			}
-
-			returnValue += getClosingSgrSequence(activeStyles);
-		} else if (character === '\n') {
-			const openingStyles = [...activeStyles];
-			applyLeadingSgrResets(preString.slice(preStringIndex + 1), openingStyles);
-			returnValue += getOpeningSgrSequence(openingStyles);
-
-			if (escapeUrl) {
-				returnValue += wrapAnsiHyperlink(escapeUrl);
-			}
-		}
-
-		preStringIndex += character.length;
-	}
-
-	return returnValue;
+	return restoreStylesAcrossRows(rows.join('\n'));
 };
 
-// For each newline, invoke the method separately
+// For each newline, invoke the method separately.
 export default function wrapAnsi(string, columns, options) {
 	return String(string)
 		.normalize()
