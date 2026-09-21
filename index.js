@@ -639,10 +639,22 @@ const exec = (string, columns, options = {}) => {
 	return restoreStylesAcrossRows(rows.join('\n'));
 };
 
+// Normalize the text, but not the sequences: a combining mark that follows a sequence composes with its last character and destroys it.
+const normalizeText = string => {
+	let normalizedString = '';
+
+	forEachSegment(string, plainText => {
+		normalizedString += plainText.normalize();
+	}, escape => {
+		normalizedString += escape;
+	});
+
+	return normalizedString;
+};
+
 // For each newline, invoke the method separately.
 export default function wrapAnsi(string, columns, options) {
-	return String(string)
-		.normalize()
+	return normalizeText(String(string))
 		.replaceAll('\r\n', '\n')
 		.split('\n')
 		.map(line => exec(expandTabs(line), columns, options))

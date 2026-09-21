@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import chalk from 'chalk';
 import hasAnsi from 'has-ansi';
 import stripAnsi from 'strip-ansi';
+import stringWidth from 'string-width';
 import wrapAnsi from './index.js';
 
 chalk.level = 1;
@@ -606,4 +607,31 @@ test('places the word after a hard-wrapped word at the right column', () => {
 test('does not reopen styles on a trailing empty row', () => {
 	assert.equal(wrapAnsi('\u001B[31mabc ', 3, {wordWrap: false}), '\u001B[31mabc\u001B[39m\n');
 	assert.equal(wrapAnsi('\u001B]8;;https://example.com\u0007abc ', 3, {wordWrap: false}), '\u001B]8;;https://example.com\u0007abc\u001B]8;;\u0007\n');
+});
+
+test('keeps a sequence whole when a combining mark follows it', () => {
+	// The text is normalized, but a sequence must not be: a combining mark after it composes with the last character of the sequence and destroys it
+	const input = '\u001B[31ḿxyzw';
+	const result = wrapAnsi(input, 3, {hard: true});
+
+	assert.equal(result, '\u001B[31ḿxyz\u001B[39m\n\u001B[31mw');
+	assert.equal(stripAnsi(result).split('\n').every(line => stringWidth(line) <= 3), true);
+});
+
+test('keeps a C1 SGR sequence whole when a combining mark follows it', () => {
+	assert.equal(wrapAnsi('\u009B31ḿxyzw', 3, {hard: true}), '\u009B31ḿxyz\u001B[39m\n\u001B[31mw');
+});
+
+test('keeps a non-SGR CSI sequence whole when a combining mark follows it', () => {
+	// NFC would otherwise compose the final `n` with the acute accent into `ń`.
+	assert.equal(wrapAnsi('\u001B[6ńxyzw', 3, {hard: true}), '\u001B[6ńxyz\nw');
+});
+
+test('continues to normalize plain text around sequences', () => {
+	assert.equal(wrapAnsi('Å\u001B[31mÉ\u001B[39mÇ', 10), 'Å\u001B[31mÉ\u001B[39mÇ');
+});
+
+test('does not normalize text inside OSC sequences', () => {
+	const input = '\u001B]0;Å\u0007text';
+	assert.equal(wrapAnsi(input, 10), input);
 });
